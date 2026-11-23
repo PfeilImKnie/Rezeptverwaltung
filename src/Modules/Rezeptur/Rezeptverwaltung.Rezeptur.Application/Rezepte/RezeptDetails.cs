@@ -8,6 +8,7 @@ public sealed record RezeptDetails(
     string Name,
     IReadOnlyList<ZutatMenge> Zutaten,
     decimal GesamtgewichtGramm,
+    Form? Bezugsform,
     int MassgeblicheFassung,
     int? AktuelleFassung,
     int? Entwurf,
@@ -19,6 +20,7 @@ public sealed record RezeptDetails(
         rezept.Name.Wert,
         rezept.Zutaten.Select(ZutatMenge.Aus).ToList(),
         rezept.Gesamtgewicht.Gramm,
+        Form.Aus(rezept.MassgeblicheFassung.Bezugsform),
         rezept.MassgeblicheFassung.Nummer,
         rezept.AktuelleFassung?.Nummer,
         rezept.Entwurf?.Nummer,
@@ -38,6 +40,7 @@ public sealed record FassungDetails(
     FassungsStatus Status,
     DateTimeOffset ErstelltAm,
     DateTimeOffset? FreigegebenAm,
+    Form? Bezugsform,
     IReadOnlyList<ZutatMenge> Zutaten,
     decimal GesamtgewichtGramm,
     string Stand)
@@ -48,6 +51,7 @@ public sealed record FassungDetails(
         fassung.Status,
         fassung.ErstelltAm,
         fassung.FreigegebenAm,
+        Form.Aus(fassung.Bezugsform),
         fassung.Zutaten.Select(ZutatMenge.Aus).ToList(),
         fassung.Gesamtgewicht.Gramm,
         stand);

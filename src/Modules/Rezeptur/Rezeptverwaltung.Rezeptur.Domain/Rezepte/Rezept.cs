@@ -43,13 +43,13 @@ public sealed class Rezept : AggregateRoot<RezeptId>
     public Gewicht Gesamtgewicht => MassgeblicheFassung.Gesamtgewicht;
 
     /// <summary>Legt ein neues Rezept an. Fassung 1 beginnt als Entwurf.</summary>
-    public static Rezept Anlegen(RezeptName name, IEnumerable<Zutatenzeile> zutaten, DateTimeOffset zeitpunkt)
+    public static Rezept Anlegen(RezeptName name, IEnumerable<Zutatenzeile> zutaten, DateTimeOffset zeitpunkt, Bezugsform? bezugsform = null)
     {
         ArgumentNullException.ThrowIfNull(name); // zutaten prüft Fassung.NeuerEntwurf
 
         var rezept = new Rezept(RezeptId.Neu(), name);
         rezept.LetzteFassungsnummer = 1;
-        rezept._fassungen.Add(Fassung.NeuerEntwurf(rezept.LetzteFassungsnummer, zutaten, zeitpunkt));
+        rezept._fassungen.Add(Fassung.NeuerEntwurf(rezept.LetzteFassungsnummer, zutaten, bezugsform, zeitpunkt));
         rezept.Melde(new RezeptAngelegt(rezept.Id));
         return rezept;
     }
@@ -66,16 +66,18 @@ public sealed class Rezept : AggregateRoot<RezeptId>
 
         var vorlage = AktuelleFassung!;
         LetzteFassungsnummer++;
-        var entwurf = Fassung.NeuerEntwurf(LetzteFassungsnummer, vorlage.Zutaten, zeitpunkt);
+        var entwurf = Fassung.NeuerEntwurf(LetzteFassungsnummer, vorlage.Zutaten, vorlage.Bezugsform, zeitpunkt);
         _fassungen.Add(entwurf);
         return entwurf;
     }
 
-    /// <summary>Ersetzt die Zutatenliste des Entwurfs.</summary>
-    public Fassung EntwurfBearbeiten(IEnumerable<Zutatenzeile> zutaten)
+    /// <summary>
+    /// Ersetzt den bearbeitbaren Inhalt des Entwurfs vollständig: Zutaten und Bezugsform (<c>null</c> = ohne Form).
+    /// </summary>
+    public Fassung EntwurfBearbeiten(IEnumerable<Zutatenzeile> zutaten, Bezugsform? bezugsform = null)
     {
         var entwurf = VorhandenerEntwurf();
-        entwurf.ZutatenSetzen(zutaten);
+        entwurf.InhaltSetzen(zutaten, bezugsform);
         return entwurf;
     }
 

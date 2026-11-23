@@ -14,6 +14,10 @@ info:
     Rezept beginnt mit Fassung 1 als Entwurf. Die *maßgebliche Fassung* ist die neueste freigegebene, solange
     es keine gibt, der Entwurf. Ohne Angabe einer Fassung beziehen sich Abfragen auf die maßgebliche Fassung.
 
+    **Bezugsform (ADR 0014):** Eine Fassung kann eine Bezugsform haben: Ring (Durchmesser, Höhe) oder Blech/Rahmen
+    (Länge, Breite, Höhe), alle Maße in cm auf 0,1 cm genau. Rezepte ohne Form (z. B. Cremes) sind erlaubt. Auf eine
+    andere Form wird über das Volumen umgerechnet: Faktor = Volumen der Zielform / Volumen der Bezugsform.
+
     **Gleichzeitige Änderungen (ADR 0013):** Antworten zu einem Rezept tragen einen `ETag` (Stand des Rezepts).
     Änderungen am Entwurf verlangen `If-Match` mit diesem ETag: fehlt er, kommt 428, ist er veraltet, kommt 412.
     So überschreibt z. B. das Tablet nie still eine Änderung, die inzwischen über Alexa gemacht wurde.
@@ -91,12 +95,7 @@ paths:
         die Summe kann daher minimal vom Zielgewicht abweichen.
       parameters:
         - $ref: '#/components/parameters/RezeptId'
-        - name: fassung
-          in: query
-          required: false
-          description: Nummer der zu skalierenden Fassung. Ohne Angabe die maßgebliche Fassung.
-          schema:
-            $ref: '#/components/schemas/Fassungsnummer'
+        - $ref: '#/components/parameters/FassungOptional'
         - name: zielgewichtGramm
           in: query
           required: true
@@ -106,6 +105,81 @@ paths:
       responses:
         '200':
           description: Das skalierte Rezept.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkaliertesRezept'
+        '400':
+          $ref: '#/components/responses/UngueltigeAnfrage'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
+        '422':
+          $ref: '#/components/responses/FachlicheRegelVerletzt'
+
+  /api/v1/rezepte/{id}/skaliert/ring:
+    get:
+      tags: [Rezepte]
+      operationId: rezeptAufRingSkalieren
+      summary: Rechnet alle Mengen auf einen Ring um (über das Volumen).
+      description: Setzt eine Bezugsform der Fassung voraus, sonst 409 `fassung.ohne_bezugsform`.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/FassungOptional'
+        - name: durchmesserCm
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Formmass'
+        - name: hoeheCm
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Formhoehe'
+      responses:
+        '200':
+          description: Das auf die Zielform umgerechnete Rezept.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkaliertesRezept'
+        '400':
+          $ref: '#/components/responses/UngueltigeAnfrage'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
+        '422':
+          $ref: '#/components/responses/FachlicheRegelVerletzt'
+
+  /api/v1/rezepte/{id}/skaliert/blech:
+    get:
+      tags: [Rezepte]
+      operationId: rezeptAufBlechSkalieren
+      summary: Rechnet alle Mengen auf ein Blech oder einen Rahmen um (über das Volumen).
+      description: Setzt eine Bezugsform der Fassung voraus, sonst 409 `fassung.ohne_bezugsform`.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/FassungOptional'
+        - name: laengeCm
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Formmass'
+        - name: breiteCm
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Formmass'
+        - name: hoeheCm
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Formhoehe'
+      responses:
+        '200':
+          description: Das auf die Zielform umgerechnete Rezept.
           content:
             application/json:
               schema:
@@ -262,6 +336,13 @@ components:
         type: string
 
   parameters:
+    FassungOptional:
+      name: fassung
+      in: query
+      required: false
+      description: Nummer der zu skalierenden Fassung. Ohne Angabe die maßgebliche Fassung.
+      schema:
+        $ref: '#/components/schemas/Fassungsnummer'
     IfMatch:
       name: If-Match
       in: header
@@ -287,6 +368,63 @@ components:
         format: uuid
 
   schemas:
+    Formmass:
+      type: number
+      minimum: 1
+      maximum: 200
+      multipleOf: 0.1
+      description: Durchmesser, Länge oder Breite in cm, auf 0,1 cm genau.
+
+    Formhoehe:
+      type: number
+      minimum: 0.1
+      maximum: 50
+      multipleOf: 0.1
+      description: Höhe in cm, auf 0,1 cm genau.
+
+    RingForm:
+      type: object
+      required: [art, durchmesserCm, hoeheCm]
+      properties:
+        art:
+          type: string
+          const: ring
+        durchmesserCm:
+          $ref: '#/components/schemas/Formmass'
+        hoeheCm:
+          $ref: '#/components/schemas/Formhoehe'
+
+    BlechForm:
+      type: object
+      description: Blech oder rechteckiger Rahmen.
+      required: [art, laengeCm, breiteCm, hoeheCm]
+      properties:
+        art:
+          type: string
+          const: blech
+        laengeCm:
+          $ref: '#/components/schemas/Formmass'
+        breiteCm:
+          $ref: '#/components/schemas/Formmass'
+        hoeheCm:
+          $ref: '#/components/schemas/Formhoehe'
+
+    Bezugsform:
+      oneOf:
+        - $ref: '#/components/schemas/RingForm'
+        - $ref: '#/components/schemas/BlechForm'
+      discriminator:
+        propertyName: art
+        mapping:
+          ring: '#/components/schemas/RingForm'
+          blech: '#/components/schemas/BlechForm'
+
+    OptionaleBezugsform:
+      description: Bezugsform der Fassung; `null` oder weggelassen = ohne Form (z. B. Cremes).
+      oneOf:
+        - $ref: '#/components/schemas/Bezugsform'
+        - type: 'null'
+
     Fassungsnummer:
       type: integer
       format: int32
@@ -314,8 +452,10 @@ components:
 
     FassungDetails:
       type: object
-      required: [rezeptId, nummer, status, erstelltAm, freigegebenAm, zutaten, gesamtgewichtGramm]
+      required: [rezeptId, nummer, status, erstelltAm, freigegebenAm, bezugsform, zutaten, gesamtgewichtGramm]
       properties:
+        bezugsform:
+          $ref: '#/components/schemas/OptionaleBezugsform'
         rezeptId:
           type: string
           format: uuid
@@ -339,8 +479,11 @@ components:
 
     EntwurfBearbeitenRequest:
       type: object
+      description: Ersetzt den bearbeitbaren Inhalt des Entwurfs vollständig. Ohne `bezugsform` hat er danach keine Form.
       required: [zutaten]
       properties:
+        bezugsform:
+          $ref: '#/components/schemas/OptionaleBezugsform'
         zutaten:
           type: array
           items:
@@ -369,6 +512,8 @@ components:
       type: object
       required: [name, zutaten]
       properties:
+        bezugsform:
+          $ref: '#/components/schemas/OptionaleBezugsform'
         name:
           $ref: '#/components/schemas/Bezeichnung'
         zutaten:
@@ -399,9 +544,11 @@ components:
     RezeptDetails:
       type: object
       description: |
-        `zutaten` und `gesamtgewichtGramm` beziehen sich auf die maßgebliche Fassung (`massgeblicheFassung`).
-      required: [id, name, zutaten, gesamtgewichtGramm, massgeblicheFassung, aktuelleFassung, entwurf, fassungen]
+        `zutaten`, `gesamtgewichtGramm` und `bezugsform` beziehen sich auf die maßgebliche Fassung (`massgeblicheFassung`).
+      required: [id, name, zutaten, gesamtgewichtGramm, bezugsform, massgeblicheFassung, aktuelleFassung, entwurf, fassungen]
       properties:
+        bezugsform:
+          $ref: '#/components/schemas/OptionaleBezugsform'
         massgeblicheFassung:
           $ref: '#/components/schemas/Fassungsnummer'
         aktuelleFassung:
@@ -431,8 +578,15 @@ components:
 
     SkaliertesRezept:
       type: object
-      required: [rezeptId, name, fassung, zielgewichtGramm, zutaten]
+      required: [rezeptId, name, fassung, faktor, zielform, zielgewichtGramm, zutaten]
       properties:
+        faktor:
+          type: number
+          exclusiveMinimum: 0
+          description: Faktor, mit dem alle Mengen multipliziert wurden, auf 12 signifikante Stellen gerundet (intern ungerundet). Immer größer als 0.
+        zielform:
+          description: Zielform bei der Umrechnung auf eine Form, sonst `null`.
+          $ref: '#/components/schemas/OptionaleBezugsform'
         fassung:
           $ref: '#/components/schemas/Fassungsnummer'
         rezeptId:

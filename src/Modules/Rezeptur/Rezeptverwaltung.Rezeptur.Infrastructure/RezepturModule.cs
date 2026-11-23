@@ -23,6 +23,7 @@ public static class RezepturModule
         services.AddScoped<RezeptAnlegenHandler>();
         services.AddScoped<RezeptAbfragenHandler>();
         services.AddScoped<RezeptSkalierenHandler>();
+        services.AddScoped<RezeptAufFormSkalierenHandler>();
         services.AddScoped<FassungAbfragenHandler>();
         services.AddScoped<EntwurfAnlegenHandler>();
         services.AddScoped<EntwurfBearbeitenHandler>();

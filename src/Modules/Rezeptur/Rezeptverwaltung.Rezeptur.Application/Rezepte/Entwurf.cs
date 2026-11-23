@@ -32,7 +32,7 @@ public sealed class EntwurfAnlegenHandler(IRezeptRepository repository, TimeProv
     }
 }
 
-public sealed record EntwurfBearbeiten(Guid RezeptId, IReadOnlyList<ZutatEingabe> Zutaten, string? ErwarteterStand);
+public sealed record EntwurfBearbeiten(Guid RezeptId, IReadOnlyList<ZutatEingabe> Zutaten, string? ErwarteterStand, Form? Bezugsform = null);
 
 public sealed class EntwurfBearbeitenHandler(IRezeptRepository repository)
 {
@@ -48,7 +48,8 @@ public sealed class EntwurfBearbeitenHandler(IRezeptRepository repository)
 
         VorbedingungException.Pruefen(repository.StandVon(rezept), befehl.ErwarteterStand, StandVeraltet);
         var zutaten = ZutatEingabe.AlsZutatenzeilen(befehl.Zutaten);
-        var entwurf = rezept.EntwurfBearbeiten(zutaten);
+        var bezugsform = befehl.Bezugsform?.AlsBezugsform();
+        var entwurf = rezept.EntwurfBearbeiten(zutaten, bezugsform);
         await repository.SpeichernAsync(rezept, cancellationToken).ConfigureAwait(false);
         return FassungDetails.Aus(rezept, entwurf, repository.StandVon(rezept));
     }

@@ -58,6 +58,16 @@ internal sealed class RezeptKonfiguration : IEntityTypeConfiguration<Rezept>
             fassung.Property(f => f.Status).HasJsonPropertyName("status").HasConversion<string>();
             fassung.Property(f => f.ErstelltAm).HasJsonPropertyName("erstelltAm").HasConversion(Zeitpunkt);
             fassung.Property(f => f.FreigegebenAm).HasJsonPropertyName("freigegebenAm").HasConversion(Zeitpunkt);
+            fassung.OwnsOne(f => f.Bezugsform, form =>
+            {
+                form.HasJsonPropertyName("bezugsform");
+                form.Property(b => b.Art).HasJsonPropertyName("art").HasConversion<string>();
+                form.Property(b => b.DurchmesserCm).HasJsonPropertyName("durchmesserCm");
+                form.Property(b => b.LaengeCm).HasJsonPropertyName("laengeCm");
+                form.Property(b => b.BreiteCm).HasJsonPropertyName("breiteCm");
+                form.Property(b => b.HoeheCm).HasJsonPropertyName("hoeheCm");
+                form.Ignore(b => b.VolumenCm3);
+            });
             fassung.Ignore(f => f.IstEntwurf);
             fassung.Ignore(f => f.Gesamtgewicht);
 

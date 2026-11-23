@@ -12,13 +12,16 @@ Modul **Rezeptur**:
 | `POST` | `/api/v1/rezepte` | Rezept mit Zutaten (in Gramm) anlegen |
 | `GET` | `/api/v1/rezepte/{id}` | Rezept abrufen |
 | `GET` | `/api/v1/rezepte/{id}/skaliert?zielgewichtGramm=…[&fassung=n]` | Alle Mengen auf ein Zielgewicht umrechnen |
+| `GET` | `/api/v1/rezepte/{id}/skaliert/ring?durchmesserCm=…&hoeheCm=…` | Auf einen Ring umrechnen (über das Volumen) |
+| `GET` | `/api/v1/rezepte/{id}/skaliert/blech?laengeCm=…&breiteCm=…&hoeheCm=…` | Auf ein Blech/einen Rahmen umrechnen |
 | `GET` | `/api/v1/rezepte/{id}/fassungen/{n}` | Eine bestimmte Fassung abrufen |
 | `POST` | `/api/v1/rezepte/{id}/entwurf` | Neuen Entwurf als Kopie der aktuellen Fassung anlegen |
-| `PUT` | `/api/v1/rezepte/{id}/entwurf` | Zutaten des Entwurfs ersetzen |
+| `PUT` | `/api/v1/rezepte/{id}/entwurf` | Inhalt des Entwurfs (Zutaten und Bezugsform) vollständig ersetzen; ohne `bezugsform` hat er danach keine Form |
 | `DELETE` | `/api/v1/rezepte/{id}/entwurf` | Entwurf verwerfen |
 | `POST` | `/api/v1/rezepte/{id}/entwurf/freigabe` | Entwurf freigeben |
 
-Rezepte haben **Fassungen** mit Entwurf und Freigabe: Freigegebene Fassungen sind unveränderlich, Änderungen
+Rezepte können eine **Bezugsform** haben (Ring oder Blech, ADR 0014) und lassen sich dann auf jede andere
+Form umrechnen. Rezepte haben **Fassungen** mit Entwurf und Freigabe: Freigegebene Fassungen sind unveränderlich, Änderungen
 entstehen als Entwurf und gelten erst nach der Freigabe (ADR 0013). Änderungen am Entwurf verlangen den Header
 `If-Match` mit dem `ETag` der letzten Antwort; so überschreibt kein Gerät still die Änderung eines anderen.
 
