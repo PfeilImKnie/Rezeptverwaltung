@@ -15,6 +15,7 @@ dotnet run --project src/Host/Rezeptverwaltung.Api        # API, OpenAPI unter /
 ## Arbeitsweise (verbindlich)
 
 - **Jeder PR entsteht über `/pr-erstellen`.** Das schließt unabhängigen Test (`/pr-test`), Dokumentation (`/adr`) und unabhängiges Code-Review (`/pr-review`) ein (ADR 0007). Nie direkt auf `main` committen.
+- Ausnahme: reine Dependabot-PRs sind vom PR-Gate befreit (ADR 0010). Ein menschlicher Commit auf den Branch beendet sie dauerhaft; dann gilt `/pr-erstellen`. Eine geänderte Beschreibung löst das Gate nur für diesen Lauf aus.
 - **Definition of Done:** [docs/definition-of-done.md](docs/definition-of-done.md)
 - **API-Änderungen beginnen in `api/openapi.yaml`**, danach Implementierung (ADR 0003). Einschränkungen in Vertrag und Domain müssen identisch sein.
 - Architekturentscheidungen: [docs/adr/](docs/adr/README.md). Nicht stillschweigend von einer ADR abweichen, sondern eine neue ADR schreiben, die sie ablöst.

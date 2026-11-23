@@ -4,6 +4,7 @@ Ein Pull Request ist **fertig**, wenn alle zutreffenden Punkte erfüllt sind. Pu
 werden in der PR-Beschreibung mit Begründung als „entfällt“ markiert, nicht einfach weggelassen.
 
 Testen, Code-Review und Dokumentation sind **Pflichtbestandteil jedes PRs** (ADR 0007).
+Ausnahme: reine Dependabot-Updates (ADR 0010). Ein menschlicher **Commit** auf den Branch beendet die Ausnahme dauerhaft. Eine geänderte PR-Beschreibung löst das Gate nur für diesen Lauf aus, weil sich der Code nicht ändert. Hier genügen die grünen CI-Checks; bei Major-Updates zusätzlich die Release Notes lesen.
 Der Ablauf ist im Skill `/pr-erstellen` festgelegt.
 
 ## 1. Fachlichkeit

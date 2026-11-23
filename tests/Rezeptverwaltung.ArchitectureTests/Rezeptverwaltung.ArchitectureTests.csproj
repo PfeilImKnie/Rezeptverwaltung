@@ -1,8 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="TngTech.ArchUnitNET.xUnitV3" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Host\Rezeptverwaltung.Api\Rezeptverwaltung.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- CI-Regeln (ADR 0007, ADR 0010) werden gegen die echten Dateien geprüft. -->
+    <None Include="..\..\.github\workflows\ci.yml" Link="ci\ci.yml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\github-einrichten.sh" Link="ci\github-einrichten.sh" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -10,6 +10,7 @@ Neue ADRs entstehen mit dem Skill `/adr` aus der [Vorlage](0000-vorlage.md). Reg
 | [0004](0004-identity-provider-fuer-oauth2-und-alexa.md) | Externer Identity Provider (OIDC) für Login und Alexa | Akzeptiert (Umsetzung ausstehend) |
 | [0005](0005-hosting-auf-hetzner-mit-docker-compose.md) | Hosting auf Hetzner-VM mit Docker Compose | Akzeptiert (Umsetzung ausstehend) |
 | [0006](0006-teststrategie.md) | Teststrategie: alles automatisiert verifiziert | Akzeptiert |
-| [0007](0007-pr-workflow-test-review-doku.md) | Jeder PR enthält unabhängigen Test, Code-Review und Dokumentation | Akzeptiert |
+| [0007](0007-pr-workflow-test-review-doku.md) | Jeder PR enthält unabhängigen Test, Code-Review und Dokumentation | Akzeptiert, Ausnahme durch 0010 |
 | [0008](0008-persistenz-postgresql-mit-ef-core.md) | Persistenz mit PostgreSQL und EF Core | Akzeptiert (Umsetzung ausstehend) |
 | [0009](0009-fehlerstatus-409-und-422-und-strikte-zahlen.md) | Fehlerstatus 422 (Eingabe) / 409 (Zustand), Zahlen und Texte strikt nach Vertrag | Akzeptiert |
+| [0010](0010-dependabot-updates-ohne-pr-gate.md) | Reine Dependabot-Updates sind vom PR-Gate ausgenommen | Akzeptiert |
