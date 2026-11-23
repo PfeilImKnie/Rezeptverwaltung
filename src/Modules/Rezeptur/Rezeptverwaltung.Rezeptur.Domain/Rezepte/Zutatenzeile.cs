@@ -23,12 +23,13 @@ public sealed record Zutatenzeile
 
     public static Zutatenzeile Von(string? bezeichnung, Gewicht menge)
     {
-        var bereinigt = bezeichnung?.Trim() ?? string.Empty;
-        DomainRuleViolationException.Wenn(bereinigt.Length == 0, "zutat.bezeichnung_leer", "Eine Zutat braucht eine Bezeichnung.");
+        var roh = bezeichnung ?? string.Empty;
         DomainRuleViolationException.Wenn(
-            bereinigt.Length > MaximaleBezeichnungsLaenge,
+            Freitext.Laenge(roh) > MaximaleBezeichnungsLaenge,
             "zutat.bezeichnung_zu_lang",
             $"Eine Zutatenbezeichnung darf höchstens {MaximaleBezeichnungsLaenge} Zeichen lang sein.");
+        var bereinigt = Freitext.OhneLeerraumAmRand(roh);
+        DomainRuleViolationException.Wenn(bereinigt.Length == 0, "zutat.bezeichnung_leer", "Eine Zutat braucht eine Bezeichnung.");
         DomainRuleViolationException.Wenn(menge.IstNull, "zutat.menge_null", "Eine Zutat muss eine Menge größer als 0 g haben.");
         return new Zutatenzeile(bereinigt, menge);
     }

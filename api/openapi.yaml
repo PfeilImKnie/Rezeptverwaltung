@@ -9,8 +9,12 @@ info:
     (siehe ADR 0003). Der Contract-Test `OpenApiVertragTests` prüft, dass die Implementierung
     exakt diese Pfade, Methoden und Statuscodes anbietet; Schemathesis prüft in der CI die Schemas.
 
-    Fachliche Fehler werden als RFC 9457 Problem Details mit Status 422 und einem stabilen
-    `code` geliefert (z. B. `gewicht.zu_genau`).
+    Fehler werden als RFC 9457 Problem Details geliefert (ADR 0003, ADR 0009):
+    - **400** Anfrage syntaktisch ungültig (Format, Pflichtfelder, `null`-Elemente)
+    - **404** Ressource existiert nicht
+    - **409** Anfrage ist gültig, aber der aktuelle Zustand der Ressource lässt sie nicht zu
+      (z. B. Rezept ohne Zutaten skalieren), mit stabilem `code`
+    - **422** Eingabe verletzt eine Fachregel (z. B. `gewicht.zu_genau`), mit stabilem `code`
 servers:
   - url: /
 tags:
@@ -88,6 +92,8 @@ paths:
           $ref: '#/components/responses/UngueltigeAnfrage'
         '404':
           $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
 
@@ -106,8 +112,12 @@ components:
       type: string
       minLength: 1
       maxLength: 200
-      pattern: '\S'
-      description: Mindestens ein sichtbares Zeichen; führende und folgende Leerzeichen werden entfernt.
+      pattern: '[^\u0009-\u000d\u001c-\u001f\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]'
+      description: |
+        Höchstens 200 Unicode-Codepoints (inklusive Leerraum am Rand) und mindestens ein Zeichen, das kein
+        Leerraum ist. Leerraum ist ausdrücklich aufgezählt (U+0009–U+000D, U+001C–U+001F, U+0020, U+0085, U+00A0,
+        U+1680, U+2000–U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF) statt `\s`, weil `\s` je nach
+        Regex-Engine (ECMAScript, Python, .NET) Verschiedenes bedeutet. Leerraum am Rand wird entfernt (ADR 0009).
 
     ErfasstesGewicht:
       type: number
@@ -212,8 +222,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
+    ZustandLaesstNichtZu:
+      description: Anfrage ist gültig, aber der aktuelle Zustand der Ressource lässt sie nicht zu.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
     FachlicheRegelVerletzt:
-      description: Anfrage verletzt eine fachliche Regel.
+      description: Eingabe verletzt eine fachliche Regel.
       content:
         application/problem+json:
           schema:

@@ -13,6 +13,8 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 | **Skalieren** | Alle Mengen mit demselben Faktor umrechnen. Das Rezept selbst bleibt unverändert. | `Rezept.Skaliert`, `Rezept.SkaliertAuf` |
 | **Skalierungsfaktor** | Faktor > 0, mit dem alle Mengen multipliziert werden. | `Skalierungsfaktor` |
 | **Zielgewicht** | Gewünschtes Gesamtgewicht nach dem Skalieren. | `zielgewichtGramm` |
+| **Ungültige Eingabe** | Eine Angabe verletzt eine Fachregel (z. B. Gewicht genauer als 0,01 g). Die Eingabe muss korrigiert werden. HTTP 422. | `Regelart.UngueltigeEingabe` |
+| **Zustandskonflikt** | Die Angabe ist gültig, aber das Rezept ist (noch) nicht in einem passenden Zustand (z. B. ohne Zutaten skalieren). Erst das Rezept vervollständigen. HTTP 409. | `Regelart.Zustandskonflikt` |
 
 ## Geplante Begriffe (noch nicht im Code)
 

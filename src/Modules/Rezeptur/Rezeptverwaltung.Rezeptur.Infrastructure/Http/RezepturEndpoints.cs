@@ -28,6 +28,7 @@ internal static class RezepturEndpoints
             .WithName("rezeptSkalieren")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         return endpoints;
@@ -38,6 +39,12 @@ internal static class RezepturEndpoints
         RezeptAnlegenHandler handler,
         CancellationToken cancellationToken)
     {
+        // System.Text.Json prüft Nullability nicht für Listenelemente: [null] muss hier abgewiesen werden.
+        if (request.Zutaten.Any(z => z is null))
+        {
+            throw new BadHttpRequestException("Die Zutatenliste enthält leere Einträge.", StatusCodes.Status400BadRequest);
+        }
+
         var befehl = new RezeptAnlegen(
             request.Name,
             request.Zutaten.Select(z => new ZutatEingabe(z.Bezeichnung, z.Gramm)).ToList());
@@ -57,11 +64,11 @@ internal static class RezepturEndpoints
 
     private static async Task<Results<Ok<SkaliertesRezeptResponse>, NotFound>> RezeptSkalierenAsync(
         Guid id,
-        decimal zielgewichtGramm,
+        Gramm zielgewichtGramm,
         RezeptSkalierenHandler handler,
         CancellationToken cancellationToken)
     {
-        var ergebnis = await handler.HandleAsync(new RezeptSkalieren(id, zielgewichtGramm), cancellationToken).ConfigureAwait(false);
+        var ergebnis = await handler.HandleAsync(new RezeptSkalieren(id, zielgewichtGramm.Wert), cancellationToken).ConfigureAwait(false);
         return ergebnis is null ? TypedResults.NotFound() : TypedResults.Ok(SkaliertesRezeptResponse.Aus(ergebnis));
     }
 }

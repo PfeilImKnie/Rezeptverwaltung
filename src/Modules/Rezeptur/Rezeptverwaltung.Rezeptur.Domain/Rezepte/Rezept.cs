@@ -46,8 +46,9 @@ public sealed class Rezept : AggregateRoot<RezeptId>
     /// <summary>Mengen so umgerechnet, dass die Summe aller Zutaten dem Zielgewicht entspricht.</summary>
     public IReadOnlyList<Zutatenzeile> SkaliertAuf(Gewicht zielgewicht)
     {
-        DomainRuleViolationException.Wenn(_zutaten.Count == 0, "rezept.ohne_zutaten", "Ein Rezept ohne Zutaten kann nicht skaliert werden.");
+        // Erst die Eingabe prüfen (422), dann den Zustand (409): 409 setzt eine gültige Anfrage voraus (ADR 0009).
         DomainRuleViolationException.Wenn(zielgewicht.IstNull, "skalierung.ziel_null", "Das Zielgewicht muss größer als 0 g sein.");
+        DomainRuleViolationException.ZustandWenn(_zutaten.Count == 0, "rezept.ohne_zutaten", "Ein Rezept ohne Zutaten kann nicht skaliert werden.");
         return Skaliert(Skalierungsfaktor.Zwischen(Gesamtgewicht, zielgewicht));
     }
 }

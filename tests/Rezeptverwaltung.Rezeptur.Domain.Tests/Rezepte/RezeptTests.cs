@@ -90,13 +90,23 @@ public sealed class RezeptTests
     }
 
     [Fact]
-    public void SkaliertAuf_ohne_Zutaten_ist_nicht_moeglich() =>
-        Should.Throw<DomainRuleViolationException>(() => Rezept.Anlegen(RezeptName.Von("Leer"), []).SkaliertAuf(Gewicht.Erfasst(100)))
-            .ShouldHaveCode("rezept.ohne_zutaten");
+    public void SkaliertAuf_ohne_Zutaten_ist_ein_Zustandskonflikt()
+    {
+        var verletzung = Should.Throw<DomainRuleViolationException>(
+            () => Rezept.Anlegen(RezeptName.Von("Leer"), []).SkaliertAuf(Gewicht.Erfasst(100)));
+
+        verletzung.ShouldHaveCode("rezept.ohne_zutaten");
+        verletzung.Art.ShouldBe(Regelart.Zustandskonflikt);
+    }
 
     [Fact]
-    public void SkaliertAuf_null_Gramm_ist_nicht_moeglich() =>
-        Should.Throw<DomainRuleViolationException>(() => Muerbeteig().SkaliertAuf(Gewicht.Null)).ShouldHaveCode("skalierung.ziel_null");
+    public void SkaliertAuf_null_Gramm_ist_eine_ungueltige_Eingabe()
+    {
+        var verletzung = Should.Throw<DomainRuleViolationException>(() => Muerbeteig().SkaliertAuf(Gewicht.Null));
+
+        verletzung.ShouldHaveCode("skalierung.ziel_null");
+        verletzung.Art.ShouldBe(Regelart.UngueltigeEingabe);
+    }
 
     // --- Eigenschaften, die für JEDES gültige Rezept gelten müssen ---
 
