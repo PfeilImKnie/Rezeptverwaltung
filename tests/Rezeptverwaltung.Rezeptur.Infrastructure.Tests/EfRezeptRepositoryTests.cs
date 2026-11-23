@@ -34,7 +34,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
                 Zutatenzeile.Von("Butter", Gewicht.Erfasst(140)),
                 Zutatenzeile.Von("Zartbitterkuvertüre", Gewicht.Erfasst(130.5m)),
                 Zutatenzeile.Von("Eier", Gewicht.Erfasst(280)),
-            ]);
+            ], Testzeit.Jetzt);
 
         var geladen = await SpeichernUndNeuLadenAsync(rezept);
 
@@ -57,7 +57,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
             Zutatenzeile.Von("Mehl", Gewicht.Erfasst(100)),
         };
 
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Biskuit"), zeilen));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Biskuit"), zeilen, Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldBe(zeilen);
     }
@@ -65,7 +65,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     [Fact]
     public async Task Rezept_ohne_Zutaten_hat_nach_dem_Laden_eine_leere_Liste()
     {
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Noch leer"), []));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Noch leer"), [], Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldBeEmpty();
     }
@@ -80,7 +80,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
         var menge = Gewicht.Erfasst(decimal.Parse(gramm, System.Globalization.CultureInfo.InvariantCulture));
 
         var geladen = await SpeichernUndNeuLadenAsync(
-            Rezept.Anlegen(RezeptName.Von("Genauigkeit"), [Zutatenzeile.Von("Safran", menge)]));
+            Rezept.Anlegen(RezeptName.Von("Genauigkeit"), [Zutatenzeile.Von("Safran", menge)], Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldHaveSingleItem().Menge.ShouldBe(menge);
     }
@@ -91,7 +91,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
         var torte = char.ConvertFromUtf32(0x1F382);
         var rezept = Rezept.Anlegen(
             RezeptName.Von($"Crème brûlée {torte} – „Spezial“"),
-            [Zutatenzeile.Von($"Bourbon-Vanille (Ø 2 mm) {torte}", Gewicht.Erfasst(2.5m))]);
+            [Zutatenzeile.Von($"Bourbon-Vanille (Ø 2 mm) {torte}", Gewicht.Erfasst(2.5m))], Testzeit.Jetzt);
 
         var geladen = await SpeichernUndNeuLadenAsync(rezept);
 
@@ -110,7 +110,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     [Fact]
     public async Task Dieselbe_Id_kann_nicht_zweimal_gespeichert_werden()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Einmalig"), []);
+        var rezept = Rezept.Anlegen(RezeptName.Von("Einmalig"), [], Testzeit.Jetzt);
         await SpeichernUndNeuLadenAsync(rezept);
 
         await using var kontext = postgres.NeuerKontext();
@@ -118,21 +118,26 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     }
 
     [Fact]
-    public async Task Zutaten_liegen_als_JSON_Array_mit_stabilen_Feldnamen_in_der_Datenbank()
+    public async Task Fassungen_und_Zutaten_liegen_als_JSON_Arrays_mit_stabilen_Feldnamen_in_der_Datenbank()
     {
-        // Das Speicherformat ist ein Vertrag mit künftigen Migrationen: Feldnamen nicht stillschweigend ändern.
-        var rezept = Rezept.Anlegen(RezeptName.Von("Format"), [Zutatenzeile.Von("Mehl", Gewicht.Erfasst(100.25m))]);
+        // Das Speicherformat ist ein Vertrag mit künftigen Migrationen: Feldnamen nicht stillschweigend ändern (ADR 0011, 0013).
+        var rezept = Rezept.Anlegen(RezeptName.Von("Format"), [Zutatenzeile.Von("Mehl", Gewicht.Erfasst(100.25m))], Testzeit.Jetzt);
         await SpeichernUndNeuLadenAsync(rezept);
 
         await using var kontext = postgres.NeuerKontext();
         var json = await kontext.Database
-            .SqlQuery<string>($"SELECT jsonb_build_object('typ', jsonb_typeof(zutaten), 'erste', zutaten->0)::text AS \"Value\" FROM rezeptur.rezepte WHERE id = {rezept.Id.Wert}")
+            .SqlQuery<string>($"SELECT jsonb_build_object('typ', jsonb_typeof(fassungen), 'erste', fassungen->0)::text AS \"Value\" FROM rezeptur.rezepte WHERE id = {rezept.Id.Wert}")
             .SingleAsync(_ct);
 
         using var dokument = System.Text.Json.JsonDocument.Parse(json);
         dokument.RootElement.GetProperty("typ").GetString().ShouldBe("array");
-        var erste = dokument.RootElement.GetProperty("erste");
-        erste.GetProperty("bezeichnung").GetString().ShouldBe("Mehl");
-        erste.GetProperty("gramm").GetDecimal().ShouldBe(100.25m);
+        var fassung = dokument.RootElement.GetProperty("erste");
+        fassung.GetProperty("nummer").GetInt32().ShouldBe(1);
+        fassung.GetProperty("status").GetString().ShouldBe("Entwurf");
+        fassung.GetProperty("erstelltAm").GetDateTimeOffset().ShouldBe(Testzeit.Jetzt);
+        fassung.GetProperty("freigegebenAm").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
+        var zutat = fassung.GetProperty("zutaten")[0];
+        zutat.GetProperty("bezeichnung").GetString().ShouldBe("Mehl");
+        zutat.GetProperty("gramm").GetDecimal().ShouldBe(100.25m);
     }
 }

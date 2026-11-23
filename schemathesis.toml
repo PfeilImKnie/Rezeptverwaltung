@@ -1,0 +1,8 @@
+# Schemathesis-Konfiguration für den CI-Job „API-Vertrag“ (ADR 0003).
+#
+# Änderungen am Entwurf verlangen If-Match mit dem aktuellen ETag (ADR 0013). Schemathesis kennt den ETag nicht
+# und schickt beliebige Werte; die vertragsgemäße Antwort darauf ist 412. Für die Prüfung „gültige Anfrage wird
+# angenommen“ zählt 412 deshalb als erwartete Antwort. Die übrigen Werte entsprechen der Voreinstellung von
+# Schemathesis (inkl. 409); 5xx ist bewusst NICHT erwartet.
+[checks.positive_data_acceptance]
+expected-statuses = ["2xx", "3xx", "401", "403", "404", "409", "412", "429"]

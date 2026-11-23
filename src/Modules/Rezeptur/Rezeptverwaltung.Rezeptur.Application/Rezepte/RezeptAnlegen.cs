@@ -5,9 +5,13 @@ namespace Rezeptverwaltung.Rezeptur.Application.Rezepte;
 
 public sealed record RezeptAnlegen(string Name, IReadOnlyList<ZutatEingabe> Zutaten);
 
-public sealed record ZutatEingabe(string Bezeichnung, decimal Gramm);
+public sealed record ZutatEingabe(string Bezeichnung, decimal Gramm)
+{
+    internal static IReadOnlyList<Zutatenzeile> AlsZutatenzeilen(IEnumerable<ZutatEingabe> eingaben) =>
+        eingaben.Select(z => Zutatenzeile.Von(z.Bezeichnung, Gewicht.Erfasst(z.Gramm))).ToList();
+}
 
-public sealed class RezeptAnlegenHandler(IRezeptRepository repository)
+public sealed class RezeptAnlegenHandler(IRezeptRepository repository, TimeProvider zeit)
 {
     public async Task<RezeptDetails> HandleAsync(RezeptAnlegen befehl, CancellationToken cancellationToken)
     {
@@ -15,9 +19,10 @@ public sealed class RezeptAnlegenHandler(IRezeptRepository repository)
 
         var rezept = Rezept.Anlegen(
             RezeptName.Von(befehl.Name),
-            befehl.Zutaten.Select(z => Zutatenzeile.Von(z.Bezeichnung, Gewicht.Erfasst(z.Gramm))));
+            ZutatEingabe.AlsZutatenzeilen(befehl.Zutaten),
+            zeit.GetUtcNow());
 
         await repository.HinzufuegenAsync(rezept, cancellationToken).ConfigureAwait(false);
-        return RezeptDetails.Aus(rezept);
+        return RezeptDetails.Aus(rezept, repository.StandVon(rezept));
     }
 }

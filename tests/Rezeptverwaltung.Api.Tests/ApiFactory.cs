@@ -14,6 +14,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async ValueTask InitializeAsync() => await _datenbank.StartAsync();
 
+    /// <summary>Client, der bei Änderungen am Entwurf automatisch den aktuellen Stand als If-Match mitsendet.</summary>
+    public HttpClient CreateClientMitAktuellemStand() => CreateDefaultClient(new IfMatchAutomatik());
+
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
         builder.UseSetting("ConnectionStrings:rezeptverwaltung", _datenbank.GetConnectionString());
 

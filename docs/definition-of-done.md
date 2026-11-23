@@ -38,7 +38,8 @@ Der Ablauf ist im Skill `/pr-erstellen` festgelegt.
 - [ ] `api/openapi.yaml` wurde **vor** der Implementierung angepasst.
 - [ ] Contract-Test (`OpenApiVertragTests`) und Schemathesis sind grün.
 - [ ] Änderungen innerhalb von `v1` sind abwärtskompatibel; Breaking Changes nur mit neuer Version und ADR.
-- [ ] Fehler werden als Problem Details geliefert: 400 = Format, 404 = nicht gefunden, 409 = Zustand lässt es nicht zu, 422 = Eingabe verletzt Fachregel; 409 und 422 jeweils mit `code` (ADR 0009).
+- [ ] Fehler werden als Problem Details geliefert: 400 = Format, 404 = nicht gefunden, 409 = Zustand lässt es nicht zu, 412/428 = Stand veraltet/fehlt, 422 = Eingabe verletzt Fachregel; jeweils mit `code` (ADR 0009, 0013).
+- [ ] Ändernde Endpunkte an bestehenden Ressourcen verlangen `If-Match` und liefern einen `ETag` (ADR 0013).
 
 ## 5. Sicherheit
 

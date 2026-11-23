@@ -2,14 +2,55 @@ using Rezeptverwaltung.Rezeptur.Domain.Rezepte;
 
 namespace Rezeptverwaltung.Rezeptur.Application.Rezepte;
 
-/// <summary>Lesemodell eines Rezepts für Frontends.</summary>
-public sealed record RezeptDetails(Guid Id, string Name, IReadOnlyList<ZutatMenge> Zutaten, decimal GesamtgewichtGramm)
+/// <summary>Lesemodell eines Rezepts. Zutaten und Gesamtgewicht beziehen sich auf die maßgebliche Fassung.</summary>
+public sealed record RezeptDetails(
+    Guid Id,
+    string Name,
+    IReadOnlyList<ZutatMenge> Zutaten,
+    decimal GesamtgewichtGramm,
+    int MassgeblicheFassung,
+    int? AktuelleFassung,
+    int? Entwurf,
+    IReadOnlyList<FassungUebersicht> Fassungen,
+    string Stand)
 {
-    internal static RezeptDetails Aus(Rezept rezept) => new(
+    internal static RezeptDetails Aus(Rezept rezept, string stand) => new(
         rezept.Id.Wert,
         rezept.Name.Wert,
         rezept.Zutaten.Select(ZutatMenge.Aus).ToList(),
-        rezept.Gesamtgewicht.Gramm);
+        rezept.Gesamtgewicht.Gramm,
+        rezept.MassgeblicheFassung.Nummer,
+        rezept.AktuelleFassung?.Nummer,
+        rezept.Entwurf?.Nummer,
+        rezept.Fassungen.OrderBy(f => f.Nummer).Select(FassungUebersicht.Aus).ToList(),
+        stand);
+}
+
+public sealed record FassungUebersicht(int Nummer, FassungsStatus Status, DateTimeOffset ErstelltAm, DateTimeOffset? FreigegebenAm)
+{
+    internal static FassungUebersicht Aus(Fassung fassung) =>
+        new(fassung.Nummer, fassung.Status, fassung.ErstelltAm, fassung.FreigegebenAm);
+}
+
+public sealed record FassungDetails(
+    Guid RezeptId,
+    int Nummer,
+    FassungsStatus Status,
+    DateTimeOffset ErstelltAm,
+    DateTimeOffset? FreigegebenAm,
+    IReadOnlyList<ZutatMenge> Zutaten,
+    decimal GesamtgewichtGramm,
+    string Stand)
+{
+    internal static FassungDetails Aus(Rezept rezept, Fassung fassung, string stand) => new(
+        rezept.Id.Wert,
+        fassung.Nummer,
+        fassung.Status,
+        fassung.ErstelltAm,
+        fassung.FreigegebenAm,
+        fassung.Zutaten.Select(ZutatMenge.Aus).ToList(),
+        fassung.Gesamtgewicht.Gramm,
+        stand);
 }
 
 public sealed record ZutatMenge(string Bezeichnung, decimal Gramm)

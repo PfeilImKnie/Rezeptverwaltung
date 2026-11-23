@@ -6,7 +6,7 @@ namespace Rezeptverwaltung.Api;
 /// <summary>
 /// Übersetzt bekannte Fehler in RFC-9457-Problem-Details:
 /// ungültige Eingabe → 422, Zustandskonflikt → 409 (jeweils mit stabilem <c>code</c>, ADR 0009),
-/// syntaktisch ungültige Anfragen → 400.
+/// veralteter bzw. fehlender Stand → 412/428 (ADR 0013), syntaktisch ungültige Anfragen → 400.
 /// Unbekannte Fehler fallen auf die Standardbehandlung (500, ohne Details) zurück.
 /// </summary>
 internal sealed class ProblemDetailsExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
@@ -30,6 +30,14 @@ internal sealed class ProblemDetailsExceptionHandler(IProblemDetailsService prob
                 Detail = verletzung.Message,
                 Type = $"https://rezeptverwaltung/probleme/{verletzung.Code}",
                 Extensions = { ["code"] = verletzung.Code },
+            },
+            VorbedingungException vorbedingung => new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = vorbedingung.Fehlt ? StatusCodes.Status428PreconditionRequired : StatusCodes.Status412PreconditionFailed,
+                Title = vorbedingung.Fehlt ? "Stand fehlt" : "Stand veraltet",
+                Detail = vorbedingung.Message,
+                Type = $"https://rezeptverwaltung/probleme/{vorbedingung.Code}",
+                Extensions = { ["code"] = vorbedingung.Code },
             },
             BadHttpRequestException ungueltig => new Microsoft.AspNetCore.Mvc.ProblemDetails
             {

@@ -17,5 +17,5 @@ internal static class Generatoren
         Gen.Select(Bezeichnung, ErfasstesGewicht, Domain.Rezepte.Zutatenzeile.Von);
 
     public static readonly Gen<Rezept> RezeptMitZutaten =
-        Zutatenzeile.List[1, 25].Select(zeilen => Rezept.Anlegen(RezeptName.Von("Testrezept"), zeilen));
+        Zutatenzeile.List[1, 25].Select(zeilen => Rezept.Anlegen(RezeptName.Von("Testrezept"), zeilen, Testzeit.Jetzt));
 }

@@ -8,6 +8,6 @@ public sealed class RezeptAbfragenHandler(IRezeptRepository repository)
     public async Task<RezeptDetails?> HandleAsync(Guid rezeptId, CancellationToken cancellationToken)
     {
         var rezept = await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false);
-        return rezept is null ? null : RezeptDetails.Aus(rezept);
+        return rezept is null ? null : RezeptDetails.Aus(rezept, repository.StandVon(rezept));
     }
 }

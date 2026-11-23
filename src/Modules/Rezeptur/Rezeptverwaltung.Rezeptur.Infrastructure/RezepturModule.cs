@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Rezeptverwaltung.Rezeptur.Application.Ports;
 using Rezeptverwaltung.Rezeptur.Application.Rezepte;
 using Rezeptverwaltung.Rezeptur.Infrastructure.Http;
@@ -18,9 +19,15 @@ public static class RezepturModule
         services.AddDbContext<RezepturDbContext>(optionen => RezepturDbContext.Konfiguriere(optionen, verbindungszeichenfolge));
         services.AddHealthChecks().AddDbContextCheck<RezepturDbContext>("rezeptur-datenbank");
         services.AddScoped<IRezeptRepository, EfRezeptRepository>();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<RezeptAnlegenHandler>();
         services.AddScoped<RezeptAbfragenHandler>();
         services.AddScoped<RezeptSkalierenHandler>();
+        services.AddScoped<FassungAbfragenHandler>();
+        services.AddScoped<EntwurfAnlegenHandler>();
+        services.AddScoped<EntwurfBearbeitenHandler>();
+        services.AddScoped<EntwurfFreigebenHandler>();
+        services.AddScoped<EntwurfVerwerfenHandler>();
         return services;
     }
 

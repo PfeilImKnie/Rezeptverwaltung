@@ -37,7 +37,7 @@ public sealed class PersistenzGrenzfallTests(PostgresFixture postgres) : IClassF
         Gen.Select(Freitext, ErfasstesGewicht, Zutatenzeile.Von);
 
     private static readonly Gen<Rezept> BeliebigesRezept =
-        Gen.Select(Freitext, Zeile.List[0, 30], (name, zeilen) => Rezept.Anlegen(RezeptName.Von(name), zeilen));
+        Gen.Select(Freitext, Zeile.List[0, 30], (name, zeilen) => Rezept.Anlegen(RezeptName.Von(name), zeilen, Testzeit.Jetzt));
 
     [Fact]
     public async Task Jedes_gueltige_Rezept_ist_nach_Speichern_und_Laden_unveraendert()
@@ -61,7 +61,7 @@ public sealed class PersistenzGrenzfallTests(PostgresFixture postgres) : IClassF
     {
         // 200 Emoji = 200 Codepoints, aber 400 UTF-16-Einheiten und 800 Byte UTF-8.
         var torten = string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x1F382), 200));
-        var rezept = Rezept.Anlegen(RezeptName.Von(torten), [Zutatenzeile.Von(torten, Gewicht.Erfasst(1))]);
+        var rezept = Rezept.Anlegen(RezeptName.Von(torten), [Zutatenzeile.Von(torten, Gewicht.Erfasst(1))], Testzeit.Jetzt);
 
         var geladen = await SpeichernUndNeuLadenAsync(rezept);
 
@@ -77,7 +77,7 @@ public sealed class PersistenzGrenzfallTests(PostgresFixture postgres) : IClassF
             .Select(i => Zutatenzeile.Von($"Zutat {i}", Gewicht.Erfasst(i / 100m)))
             .ToArray();
 
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Petits Fours Sortiment"), zeilen));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Petits Fours Sortiment"), zeilen, Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldBe(zeilen);
     }
@@ -91,7 +91,7 @@ public sealed class PersistenzGrenzfallTests(PostgresFixture postgres) : IClassF
             .Append(Zutatenzeile.Von("Salz", Gewicht.Erfasst(0.01m)))
             .ToArray();
 
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Großbäckerei"), zeilen));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Großbäckerei"), zeilen, Testzeit.Jetzt));
 
         geladen.Gesamtgewicht.Gramm.ShouldBe(5_000_000_000.01m);
     }
@@ -102,7 +102,7 @@ public sealed class PersistenzGrenzfallTests(PostgresFixture postgres) : IClassF
         // Zweimal exakt gleiche Zeile (gleiche Bezeichnung, gleiches Gewicht) darf nicht zusammenfallen.
         var zucker = Zutatenzeile.Von("Zucker", Gewicht.Erfasst(50));
 
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Baiser"), [zucker, zucker, zucker]));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Baiser"), [zucker, zucker, zucker], Testzeit.Jetzt));
 
         geladen.Zutaten.Count.ShouldBe(3);
         geladen.Zutaten.ShouldAllBe(z => z == zucker);
@@ -127,7 +127,7 @@ public sealed class PersistenzGrenzfallTests(PostgresFixture postgres) : IClassF
     public async Task Viele_gleichzeitig_gespeicherte_Rezepte_sind_alle_ladbar()
     {
         var rezepte = Enumerable.Range(1, 20)
-            .Select(i => Rezept.Anlegen(RezeptName.Von($"Torte {i}"), [Zutatenzeile.Von("Ei", Gewicht.Erfasst(i))]))
+            .Select(i => Rezept.Anlegen(RezeptName.Von($"Torte {i}"), [Zutatenzeile.Von("Ei", Gewicht.Erfasst(i))], Testzeit.Jetzt))
             .ToArray();
 
         await Task.WhenAll(rezepte.Select(async rezept =>

@@ -5,13 +5,22 @@ Allergene, Kalkulation. API-first, damit Tablet-App, Alexa-Skill und weitere Fro
 
 ## Stand
 
-Grundgerüst mit erstem fachlichem Schnitt im Modul **Rezeptur**:
+Modul **Rezeptur**:
 
 | Methode | Pfad | Zweck |
 |---|---|---|
 | `POST` | `/api/v1/rezepte` | Rezept mit Zutaten (in Gramm) anlegen |
 | `GET` | `/api/v1/rezepte/{id}` | Rezept abrufen |
-| `GET` | `/api/v1/rezepte/{id}/skaliert?zielgewichtGramm=…` | Alle Mengen auf ein Zielgewicht umrechnen |
+| `GET` | `/api/v1/rezepte/{id}/skaliert?zielgewichtGramm=…[&fassung=n]` | Alle Mengen auf ein Zielgewicht umrechnen |
+| `GET` | `/api/v1/rezepte/{id}/fassungen/{n}` | Eine bestimmte Fassung abrufen |
+| `POST` | `/api/v1/rezepte/{id}/entwurf` | Neuen Entwurf als Kopie der aktuellen Fassung anlegen |
+| `PUT` | `/api/v1/rezepte/{id}/entwurf` | Zutaten des Entwurfs ersetzen |
+| `DELETE` | `/api/v1/rezepte/{id}/entwurf` | Entwurf verwerfen |
+| `POST` | `/api/v1/rezepte/{id}/entwurf/freigabe` | Entwurf freigeben |
+
+Rezepte haben **Fassungen** mit Entwurf und Freigabe: Freigegebene Fassungen sind unveränderlich, Änderungen
+entstehen als Entwurf und gelten erst nach der Freigabe (ADR 0013). Änderungen am Entwurf verlangen den Header
+`If-Match` mit dem `ETag` der letzten Antwort; so überschreibt kein Gerät still die Änderung eines anderen.
 
 Daten liegen in **PostgreSQL** (ADR 0008, 0011). Authentifizierung folgt (ADR 0004). Die API ist daher
 noch nicht für den öffentlichen Betrieb gedacht.

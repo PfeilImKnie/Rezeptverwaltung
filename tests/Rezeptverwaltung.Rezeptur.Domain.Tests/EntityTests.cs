@@ -8,8 +8,8 @@ public sealed class EntityTests
     [Fact]
     public void Verschiedene_Rezepte_sind_ungleich()
     {
-        var a = Rezept.Anlegen(RezeptName.Von("A"), []);
-        var b = Rezept.Anlegen(RezeptName.Von("A"), []);
+        var a = Rezept.Anlegen(RezeptName.Von("A"), [], Testzeit.Jetzt);
+        var b = Rezept.Anlegen(RezeptName.Von("A"), [], Testzeit.Jetzt);
 
         a.Equals(b).ShouldBeFalse();
         a.Equals((object?)null).ShouldBeFalse();
@@ -18,7 +18,7 @@ public sealed class EntityTests
     [Fact]
     public void Rezept_ist_gleich_zu_sich_selbst()
     {
-        var a = Rezept.Anlegen(RezeptName.Von("A"), []);
+        var a = Rezept.Anlegen(RezeptName.Von("A"), [], Testzeit.Jetzt);
 
         a.Equals(a).ShouldBeTrue();
         a.GetHashCode().ShouldBe(a.GetHashCode());
