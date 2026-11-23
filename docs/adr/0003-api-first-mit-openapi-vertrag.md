@@ -1,6 +1,6 @@
 # 0003 – API-first: `api/openapi.yaml` ist der Vertrag
 
-- **Status:** Akzeptiert
+- **Status:** Akzeptiert. Punkt 5 präzisiert durch [0009](0009-fehlerstatus-409-und-422-und-strikte-zahlen.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** REST-API, alle Frontends
 

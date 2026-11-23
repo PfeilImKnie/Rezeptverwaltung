@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Rezeptverwaltung.Api;
 using Rezeptverwaltung.Rezeptur.Infrastructure;
 
@@ -8,6 +9,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     // Fehlende oder null-Pflichtfelder führen zu 400 statt zu halb initialisierten Objekten.
     options.SerializerOptions.RespectNullableAnnotations = true;
     options.SerializerOptions.RespectRequiredConstructorParameters = true;
+    // Zahlen nur als JSON-Zahlen, nicht als Strings ("100"): der Vertrag sagt type: number.
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
