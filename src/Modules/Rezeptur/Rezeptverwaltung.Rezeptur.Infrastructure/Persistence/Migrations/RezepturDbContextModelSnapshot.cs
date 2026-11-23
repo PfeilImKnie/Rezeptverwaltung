@@ -29,10 +29,20 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("LetzteFassungsnummer")
+                        .HasColumnType("integer")
+                        .HasColumnName("letzte_fassungsnummer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -41,33 +51,67 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Rezeptverwaltung.Rezeptur.Domain.Rezepte.Rezept", b =>
                 {
-                    b.OwnsMany("Rezeptverwaltung.Rezeptur.Domain.Rezepte.Zutatenzeile", "Zutaten", b1 =>
+                    b.OwnsMany("Rezeptverwaltung.Rezeptur.Domain.Rezepte.Fassung", "Fassungen", b1 =>
                         {
                             b1.Property<Guid>("RezeptId");
 
                             b1.Property<int>("__synthesizedOrdinal")
                                 .ValueGeneratedOnAdd();
 
-                            b1.Property<string>("Bezeichnung")
-                                .IsRequired()
-                                .HasJsonPropertyName("bezeichnung");
+                            b1.Property<DateTimeOffset>("ErstelltAm")
+                                .HasJsonPropertyName("erstelltAm");
 
-                            b1.Property<decimal>("Menge")
-                                .HasJsonPropertyName("gramm");
+                            b1.Property<DateTimeOffset?>("FreigegebenAm")
+                                .HasJsonPropertyName("freigegebenAm");
+
+                            b1.Property<int>("Nummer")
+                                .HasJsonPropertyName("nummer");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasJsonPropertyName("status");
 
                             b1.HasKey("RezeptId", "__synthesizedOrdinal");
 
                             b1.ToTable("rezepte", "rezeptur");
 
                             b1
-                                .ToJson("zutaten")
+                                .ToJson("fassungen")
                                 .HasColumnType("jsonb");
 
                             b1.WithOwner()
                                 .HasForeignKey("RezeptId");
+
+                            b1.OwnsMany("Rezeptverwaltung.Rezeptur.Domain.Rezepte.Zutatenzeile", "Zutaten", b2 =>
+                                {
+                                    b2.Property<Guid>("FassungRezeptId");
+
+                                    b2.Property<int>("Fassung__synthesizedOrdinal");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd();
+
+                                    b2.Property<string>("Bezeichnung")
+                                        .IsRequired()
+                                        .HasJsonPropertyName("bezeichnung");
+
+                                    b2.Property<decimal>("Menge")
+                                        .HasJsonPropertyName("gramm");
+
+                                    b2.HasKey("FassungRezeptId", "Fassung__synthesizedOrdinal", "__synthesizedOrdinal");
+
+                                    b2.ToTable("rezepte", "rezeptur");
+
+                                    b2.HasJsonPropertyName("zutaten");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("FassungRezeptId", "Fassung__synthesizedOrdinal");
+                                });
+
+                            b1.Navigation("Zutaten");
                         });
 
-                    b.Navigation("Zutaten");
+                    b.Navigation("Fassungen");
                 });
 #pragma warning restore 612, 618
         }

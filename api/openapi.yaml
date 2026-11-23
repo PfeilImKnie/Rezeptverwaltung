@@ -9,12 +9,23 @@ info:
     (siehe ADR 0003). Der Contract-Test `OpenApiVertragTests` prüft, dass die Implementierung
     exakt diese Pfade, Methoden und Statuscodes anbietet; Schemathesis prüft in der CI die Schemas.
 
+    **Fassungen (ADR 0013):** Ein Rezept besteht aus Fassungen 1…n. Eine Fassung ist ein `entwurf` oder
+    `freigegeben`. Freigegebene Fassungen sind unveränderlich, es gibt höchstens einen Entwurf. Ein neues
+    Rezept beginnt mit Fassung 1 als Entwurf. Die *maßgebliche Fassung* ist die neueste freigegebene, solange
+    es keine gibt, der Entwurf. Ohne Angabe einer Fassung beziehen sich Abfragen auf die maßgebliche Fassung.
+
+    **Gleichzeitige Änderungen (ADR 0013):** Antworten zu einem Rezept tragen einen `ETag` (Stand des Rezepts).
+    Änderungen am Entwurf verlangen `If-Match` mit diesem ETag: fehlt er, kommt 428, ist er veraltet, kommt 412.
+    So überschreibt z. B. das Tablet nie still eine Änderung, die inzwischen über Alexa gemacht wurde.
+
     Fehler werden als RFC 9457 Problem Details geliefert (ADR 0003, ADR 0009):
     - **400** Anfrage syntaktisch ungültig (Format, Pflichtfelder, `null`-Elemente)
     - **404** Ressource existiert nicht
     - **409** Anfrage ist gültig, aber der aktuelle Zustand der Ressource lässt sie nicht zu
       (z. B. Rezept ohne Zutaten skalieren), mit stabilem `code`
     - **422** Eingabe verletzt eine Fachregel (z. B. `gewicht.zu_genau`), mit stabilem `code`
+    - **412** `If-Match` passt nicht mehr zum aktuellen Stand (`rezept.veraltet`): neu laden, erneut versuchen
+    - **428** `If-Match` fehlt bei einer Änderung am Entwurf (`anfrage.if_match_fehlt`)
 servers:
   - url: /
 tags:
@@ -35,6 +46,8 @@ paths:
         '201':
           description: Rezept angelegt.
           headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
             Location:
               description: URL des neuen Rezepts.
               schema:
@@ -58,6 +71,9 @@ paths:
       responses:
         '200':
           description: Das Rezept.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
           content:
             application/json:
               schema:
@@ -75,6 +91,12 @@ paths:
         die Summe kann daher minimal vom Zielgewicht abweichen.
       parameters:
         - $ref: '#/components/parameters/RezeptId'
+        - name: fassung
+          in: query
+          required: false
+          description: Nummer der zu skalierenden Fassung. Ohne Angabe die maßgebliche Fassung.
+          schema:
+            $ref: '#/components/schemas/Fassungsnummer'
         - name: zielgewichtGramm
           in: query
           required: true
@@ -97,8 +119,165 @@ paths:
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
 
+  /api/v1/rezepte/{id}/fassungen/{nummer}:
+    get:
+      tags: [Rezepte]
+      operationId: fassungAbfragen
+      summary: Liefert eine bestimmte Fassung eines Rezepts.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/Fassungsnummer'
+      responses:
+        '200':
+          description: Die Fassung.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FassungDetails'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+
+  /api/v1/rezepte/{id}/entwurf:
+    post:
+      tags: [Rezepte]
+      operationId: entwurfAnlegen
+      summary: Legt einen neuen Entwurf als Kopie der aktuellen freigegebenen Fassung an.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '201':
+          description: Entwurf angelegt.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Location:
+              description: URL der neuen Fassung.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FassungDetails'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
+        '412':
+          $ref: '#/components/responses/VeralteterStand'
+        '428':
+          $ref: '#/components/responses/IfMatchFehlt'
+    put:
+      tags: [Rezepte]
+      operationId: entwurfBearbeiten
+      summary: Ersetzt die Zutatenliste des Entwurfs.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntwurfBearbeitenRequest'
+      responses:
+        '200':
+          description: Der geänderte Entwurf.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FassungDetails'
+        '400':
+          $ref: '#/components/responses/UngueltigeAnfrage'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
+        '412':
+          $ref: '#/components/responses/VeralteterStand'
+        '428':
+          $ref: '#/components/responses/IfMatchFehlt'
+        '422':
+          $ref: '#/components/responses/FachlicheRegelVerletzt'
+    delete:
+      tags: [Rezepte]
+      operationId: entwurfVerwerfen
+      summary: Verwirft den Entwurf. Nicht möglich, wenn er die einzige Fassung ist.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204':
+          description: Entwurf verworfen.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
+        '412':
+          $ref: '#/components/responses/VeralteterStand'
+        '428':
+          $ref: '#/components/responses/IfMatchFehlt'
+
+  /api/v1/rezepte/{id}/entwurf/freigabe:
+    post:
+      tags: [Rezepte]
+      operationId: entwurfFreigeben
+      summary: Gibt den Entwurf frei. Er wird unveränderlich und zur aktuellen Fassung.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Die freigegebene Fassung.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FassungDetails'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '409':
+          $ref: '#/components/responses/ZustandLaesstNichtZu'
+        '412':
+          $ref: '#/components/responses/VeralteterStand'
+        '428':
+          $ref: '#/components/responses/IfMatchFehlt'
+
 components:
+  headers:
+    ETag:
+      description: Stand des Rezepts. Bei Änderungen am Entwurf als `If-Match` mitsenden.
+      schema:
+        type: string
+
   parameters:
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: |
+        ETag aus der letzten Antwort zu diesem Rezept, in Anführungszeichen. Andere Werte (ohne Anführungszeichen,
+        schwache ETags, `*`, Listen) passen nie und ergeben 412; ein fehlender oder leerer Header ergibt 428.
+      schema:
+        type: string
+        pattern: '^"[^"]*"$'
+    Fassungsnummer:
+      name: nummer
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Fassungsnummer'
     RezeptId:
       name: id
       in: path
@@ -108,6 +287,65 @@ components:
         format: uuid
 
   schemas:
+    Fassungsnummer:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 2147483647
+
+    FassungsStatus:
+      type: string
+      enum: [entwurf, freigegeben]
+
+    FassungUebersicht:
+      type: object
+      required: [nummer, status, erstelltAm, freigegebenAm]
+      properties:
+        nummer:
+          $ref: '#/components/schemas/Fassungsnummer'
+        status:
+          $ref: '#/components/schemas/FassungsStatus'
+        erstelltAm:
+          type: string
+          format: date-time
+        freigegebenAm:
+          type: [string, 'null']
+          format: date-time
+
+    FassungDetails:
+      type: object
+      required: [rezeptId, nummer, status, erstelltAm, freigegebenAm, zutaten, gesamtgewichtGramm]
+      properties:
+        rezeptId:
+          type: string
+          format: uuid
+        nummer:
+          $ref: '#/components/schemas/Fassungsnummer'
+        status:
+          $ref: '#/components/schemas/FassungsStatus'
+        erstelltAm:
+          type: string
+          format: date-time
+        freigegebenAm:
+          type: [string, 'null']
+          format: date-time
+        zutaten:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zutat'
+        gesamtgewichtGramm:
+          type: number
+          minimum: 0
+
+    EntwurfBearbeitenRequest:
+      type: object
+      required: [zutaten]
+      properties:
+        zutaten:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZutatEingabe'
+
     Bezeichnung:
       type: string
       minLength: 1
@@ -160,8 +398,24 @@ components:
 
     RezeptDetails:
       type: object
-      required: [id, name, zutaten, gesamtgewichtGramm]
+      description: |
+        `zutaten` und `gesamtgewichtGramm` beziehen sich auf die maßgebliche Fassung (`massgeblicheFassung`).
+      required: [id, name, zutaten, gesamtgewichtGramm, massgeblicheFassung, aktuelleFassung, entwurf, fassungen]
       properties:
+        massgeblicheFassung:
+          $ref: '#/components/schemas/Fassungsnummer'
+        aktuelleFassung:
+          description: Neueste freigegebene Fassung, `null` solange keine freigegeben ist.
+          type: [integer, 'null']
+          format: int32
+        entwurf:
+          description: Nummer des Entwurfs, `null` wenn es keinen gibt.
+          type: [integer, 'null']
+          format: int32
+        fassungen:
+          type: array
+          items:
+            $ref: '#/components/schemas/FassungUebersicht'
         id:
           type: string
           format: uuid
@@ -177,8 +431,10 @@ components:
 
     SkaliertesRezept:
       type: object
-      required: [rezeptId, name, zielgewichtGramm, zutaten]
+      required: [rezeptId, name, fassung, zielgewichtGramm, zutaten]
       properties:
+        fassung:
+          $ref: '#/components/schemas/Fassungsnummer'
         rezeptId:
           type: string
           format: uuid
@@ -225,6 +481,18 @@ components:
             $ref: '#/components/schemas/ProblemDetails'
     ZustandLaesstNichtZu:
       description: Anfrage ist gültig, aber der aktuelle Zustand der Ressource lässt sie nicht zu.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    VeralteterStand:
+      description: Das Rezept wurde inzwischen geändert (`If-Match` veraltet). Neu laden und erneut versuchen.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    IfMatchFehlt:
+      description: Änderungen am Entwurf verlangen `If-Match` mit dem aktuellen ETag.
       content:
         application/problem+json:
           schema:

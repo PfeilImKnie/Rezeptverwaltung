@@ -23,6 +23,13 @@ public sealed class DomainRuleViolationException : Exception
         Art = art;
     }
 
+    public DomainRuleViolationException(string code, string message, Regelart art, Exception innerException)
+        : base(message, innerException)
+    {
+        Code = code;
+        Art = art;
+    }
+
     public DomainRuleViolationException(string code, string message)
         : this(code, message, Regelart.UngueltigeEingabe)
     {

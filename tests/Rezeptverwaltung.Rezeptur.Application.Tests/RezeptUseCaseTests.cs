@@ -9,7 +9,7 @@ public sealed class RezeptUseCaseTests
     private readonly CancellationToken _ct = TestContext.Current.CancellationToken;
 
     private Task<RezeptDetails> SachermasseAnlegenAsync() =>
-        new RezeptAnlegenHandler(_repository).HandleAsync(
+        new RezeptAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(
             new RezeptAnlegen(
                 "Sachermasse",
                 [new ZutatEingabe("Butter", 140), new ZutatEingabe("Zucker", 140), new ZutatEingabe("Eier", 280.5m)]),
@@ -29,7 +29,7 @@ public sealed class RezeptUseCaseTests
     [Fact]
     public async Task RezeptAnlegen_speichert_nichts_bei_verletzter_Fachregel()
     {
-        var handler = new RezeptAnlegenHandler(_repository);
+        var handler = new RezeptAnlegenHandler(_repository, Testzeit.Anbieter);
 
         await Should.ThrowAsync<DomainRuleViolationException>(
             () => handler.HandleAsync(new RezeptAnlegen("Fehler", [new ZutatEingabe("Salz", 0.001m)]), _ct));

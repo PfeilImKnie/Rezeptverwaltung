@@ -1,0 +1,18 @@
+# Schemathesis-Konfiguration für den CI-Job „API-Vertrag“ (ADR 0003).
+#
+# Änderungen am Entwurf verlangen If-Match mit dem aktuellen ETag (ADR 0013). Schemathesis kennt den ETag nicht.
+# Die Voreinstellungen werden deshalb nur um die vertragsgemäßen Antworten auf den Stand erweitert, jeweils
+# für genau eine Prüfung. 5xx ist nirgends erwartet.
+
+# Gültige Anfrage mit beliebigem (also veraltetem) ETag → 412.
+# Übrige Werte = Voreinstellung von Schemathesis (inkl. 409).
+[checks.positive_data_acceptance]
+expected-statuses = ["2xx", "3xx", "401", "403", "404", "409", "412", "429"]
+
+# If-Match fehlt → 428 Precondition Required (RFC 6585) statt eines allgemeinen 400.
+[checks.missing_required_header]
+expected-statuses = ["400", "401", "403", "406", "415", "422", "428"]
+
+# If-Match verletzt das Muster (z. B. ohne Anführungszeichen) → laut Vertrag 412 („passt nie“).
+[checks.negative_data_rejection]
+expected-statuses = ["400", "401", "403", "404", "405", "406", "409", "412", "415", "422", "428", "429"]

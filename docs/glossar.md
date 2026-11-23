@@ -5,7 +5,13 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 
 | Begriff | Bedeutung | Im Code |
 |---|---|---|
-| **Rezept** | Eine Rezeptur mit Namen und Zutatenliste. Konsistenzgrenze (Aggregat). | `Rezept` |
+| **Rezept** | Eine Rezeptur mit Namen und ihren Fassungen. Konsistenzgrenze (Aggregat). | `Rezept` |
+| **Fassung** | Ein Stand eines Rezepts mit eigener Zutatenliste, fortlaufend nummeriert (1, 2, 3 …). Nummern werden nie wiederverwendet, auch nicht nach dem Verwerfen eines Entwurfs. | `Fassung` |
+| **Entwurf** | Fassung in Arbeit: darf geändert werden, gilt aber noch nicht. Es gibt höchstens einen. Ein neues Rezept beginnt mit Fassung 1 als Entwurf; ein späterer Entwurf entsteht als Kopie der aktuellen Fassung. | `FassungsStatus.Entwurf` |
+| **Freigabe** | Macht den Entwurf zur geltenden Fassung. Danach ist die Fassung unveränderlich. Eine Fassung ohne Zutaten kann nicht freigegeben werden. | `Rezept.EntwurfFreigeben` |
+| **Verwerfen** | Löscht den Entwurf. Nicht möglich, wenn er die einzige Fassung des Rezepts ist. | `Rezept.EntwurfVerwerfen` |
+| **Aktuelle Fassung** | Die neueste freigegebene Fassung. | `Rezept.AktuelleFassung` |
+| **Maßgebliche Fassung** | Die Fassung, die ohne ausdrückliche Angabe gilt: die aktuelle Fassung, solange es keine gibt, der Entwurf. | `Rezept.MassgeblicheFassung` |
 | **Zutatenzeile** | Eine Zeile der Zutatenliste: Bezeichnung + Menge. Dieselbe Zutat darf mehrfach vorkommen (z. B. Zucker im Teig und im Eischnee). | `Zutatenzeile` |
 | **Gewicht** | Menge in Gramm. In der Konditorei wird ausschließlich nach Gewicht gearbeitet. | `Gewicht` |
 | **Erfasstes Gewicht** | Ein von einem Menschen eingegebenes Gewicht: 0 bis 1.000.000.000 g, auf 0,01 g genau. | `Gewicht.Erfasst` |
@@ -20,8 +26,9 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 
 | Begriff | Bedeutung |
 |---|---|
-| **Grundrezept / Komponente** | Ein Rezept, das als Baustein in anderen Rezepten verwendet wird (Mürbeteig, Ganache …). |
-| **Rezeptversion** | Unveränderlicher Stand eines Rezepts; Komponenten verweisen auf eine feste Version. |
+| **Grundrezept / Komponente** | Ein Rezept, das als Baustein in anderen Rezepten verwendet wird (Mürbeteig, Ganache …), immer in einer **festen Fassung**. Umstellen auf eine neuere Fassung ist eine bewusste Änderung. Weitere geeignete Varianten sind nur eine Notiz am Endprodukt. |
+| **Anteil** | Menge einer Komponente mit anderer Bezugsform, z. B. „¼ Blech“ Biskuit für eine Torte im Ring Ø 26. |
+| **Zubereitung** | Protokoll, wann ein Rezept in welcher Fassung und Größe zubereitet wurde, mit den Fassungen aller Komponenten. Wird nie nachträglich verändert. |
 | **Ausbeute / Backverlust** | Verhältnis von Fertiggewicht zu Teigeinlage. |
 | **Formskalierung** | Skalieren nach Backform (Ring Ø, Rahmen L×B) über die Fläche. |
 | **Arbeitssitzung** | Laufende Zubereitung eines Rezepts (aktueller Schritt). Grundlage für die Bedienung per Sprache (Alexa). |

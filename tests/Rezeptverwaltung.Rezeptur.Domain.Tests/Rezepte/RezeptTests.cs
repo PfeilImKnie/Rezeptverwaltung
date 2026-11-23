@@ -12,7 +12,7 @@ public sealed class RezeptTests
             Zutatenzeile.Von("Zucker", Gewicht.Erfasst(100)),
             Zutatenzeile.Von("Butter", Gewicht.Erfasst(200)),
             Zutatenzeile.Von("Mehl", Gewicht.Erfasst(300)),
-        ]);
+        ], Testzeit.Jetzt);
 
     [Fact]
     public void Anlegen_vergibt_Id_und_meldet_RezeptAngelegt()
@@ -37,7 +37,7 @@ public sealed class RezeptTests
     {
         var rezept = Rezept.Anlegen(
             RezeptName.Von("Biskuit"),
-            [Zutatenzeile.Von("Zucker", Gewicht.Erfasst(50)), Zutatenzeile.Von("Zucker", Gewicht.Erfasst(75))]);
+            [Zutatenzeile.Von("Zucker", Gewicht.Erfasst(50)), Zutatenzeile.Von("Zucker", Gewicht.Erfasst(75))], Testzeit.Jetzt);
 
         rezept.Zutaten.Count.ShouldBe(2);
     }
@@ -55,8 +55,8 @@ public sealed class RezeptTests
     [Fact]
     public void Anlegen_ohne_Name_oder_Zutatenliste_ist_ein_Programmierfehler()
     {
-        Should.Throw<ArgumentNullException>(() => Rezept.Anlegen(null!, []));
-        Should.Throw<ArgumentNullException>(() => Rezept.Anlegen(RezeptName.Von("X"), null!));
+        Should.Throw<ArgumentNullException>(() => Rezept.Anlegen(null!, [], Testzeit.Jetzt));
+        Should.Throw<ArgumentNullException>(() => Rezept.Anlegen(RezeptName.Von("X"), null!, Testzeit.Jetzt));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class RezeptTests
 
     [Fact]
     public void Rezept_ohne_Zutaten_wiegt_nichts() =>
-        Rezept.Anlegen(RezeptName.Von("Leer"), []).Gesamtgewicht.ShouldBe(Gewicht.Null);
+        Rezept.Anlegen(RezeptName.Von("Leer"), [], Testzeit.Jetzt).Gesamtgewicht.ShouldBe(Gewicht.Null);
 
     [Fact]
     public void SkaliertAuf_rechnet_Mengen_proportional_um()
@@ -93,7 +93,7 @@ public sealed class RezeptTests
     public void SkaliertAuf_ohne_Zutaten_ist_ein_Zustandskonflikt()
     {
         var verletzung = Should.Throw<DomainRuleViolationException>(
-            () => Rezept.Anlegen(RezeptName.Von("Leer"), []).SkaliertAuf(Gewicht.Erfasst(100)));
+            () => Rezept.Anlegen(RezeptName.Von("Leer"), [], Testzeit.Jetzt).SkaliertAuf(Gewicht.Erfasst(100)));
 
         verletzung.ShouldHaveCode("rezept.ohne_zutaten");
         verletzung.Art.ShouldBe(Regelart.Zustandskonflikt);

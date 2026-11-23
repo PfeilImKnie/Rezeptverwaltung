@@ -1,6 +1,6 @@
 # 0009 – Fehlerstatus: 422 für ungültige Eingaben, 409 für Zustandskonflikte; Zahlen und Texte strikt nach Vertrag
 
-- **Status:** Akzeptiert
+- **Status:** Akzeptiert. Ergänzt um 412/428 durch [0013](0013-rezeptfassungen-mit-entwurf-freigabe-und-stand.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** REST-API, SharedKernel, alle Module. Präzisiert [ADR 0003](0003-api-first-mit-openapi-vertrag.md), Punkt 5.
 
