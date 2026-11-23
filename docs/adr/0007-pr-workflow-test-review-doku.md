@@ -1,6 +1,6 @@
 # 0007 – Jeder PR enthält unabhängigen Test, Code-Review und Dokumentation
 
-- **Status:** Akzeptiert
+- **Status:** Akzeptiert. Ausnahme für reine Dependabot-Updates: [0010](0010-dependabot-updates-ohne-pr-gate.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** Arbeitsweise
 

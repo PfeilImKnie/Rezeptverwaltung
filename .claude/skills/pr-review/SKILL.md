@@ -48,7 +48,8 @@ Gehe jede Kategorie durch. Für jede Kategorie gibt es entweder Befunde oder aus
 5. **Sicherheit:** Eingaben begrenzt, keine Secrets, keine Tokens oder personenbezogenen Daten in Logs, Fehlermeldungen ohne interne Details. Neue Abhängigkeiten begründet? Ab ADR-0004-Umsetzung: AuthN/AuthZ an jedem Endpoint.
 6. **Tests (ADR 0006):** Würden die Tests fehlschlagen, wenn der Code falsch wäre? Gibt es Grenzwerte, Fehlerfälle, property-based Tests für Rechenlogik? API-Tests für jeden Statuscode des Vertrags? Wird der Bericht von `/pr-test` geliefert, prüfe ihn auf Plausibilität.
 7. **Dokumentation (ADR 0001):** Braucht die Änderung eine ADR, und gibt es sie? Sind Glossar, README und CLAUDE.md aktuell? Stimmen Kommentare und XML-Doku mit dem Code überein?
-8. **Einfachheit:** Unnötige Abstraktionen, toter Code, Duplikate, unklare Namen.
+8. **CI und Prozess (ADR 0007, 0010):** Bei Änderungen an `.github/workflows/`, `scripts/github-einrichten.sh` oder `.github/dependabot.yml`: Bleiben alle Pflicht-Checks erhalten, und stimmen Job-Namen und Branch-Schutz überein? Wird das PR-Gate umgangen oder die Dependabot-Ausnahme ausgeweitet? Eine Ausweitung braucht eine neue ADR. Ist `CiWorkflowTests` angepasst?
+9. **Einfachheit:** Unnötige Abstraktionen, toter Code, Duplikate, unklare Namen.
 
 ## 5. Befunde verifizieren
 

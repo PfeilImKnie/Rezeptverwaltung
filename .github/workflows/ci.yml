@@ -91,7 +91,12 @@ jobs:
 
   pr-gate:
     name: PR-Gate (Test, Review, Doku, DoD)
-    if: github.event_name == 'pull_request'
+    # Ausnahme (ADR 0010): reine Dependabot-Updates. Gilt nur, wenn der PR von Dependabot stammt UND der Lauf
+    # von Dependabot ausgelöst wurde. Pusht ein Mensch auf den Branch oder bearbeitet die Beschreibung, greift das Gate.
+    # Ein übersprungener Job zählt für den Branch-Schutz als bestanden.
+    if: >-
+      github.event_name == 'pull_request' &&
+      !(github.event.pull_request.user.login == 'dependabot[bot]' && github.actor == 'dependabot[bot]')
     runs-on: ubuntu-latest
     steps:
       - name: PR-Beschreibung prüfen (ADR 0007)
