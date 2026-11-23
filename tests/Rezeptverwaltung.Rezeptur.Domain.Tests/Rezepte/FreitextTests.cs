@@ -41,12 +41,30 @@ public sealed class FreitextTests
     [InlineData(0x0008)] // Grenzen der Leerraum-Bereiche
     [InlineData(0x000E)]
     [InlineData(0x1FFF)]
-    [InlineData(0x0000)]
     [InlineData(0x001B)]
     [InlineData(0x0021)]
     [InlineData(0x200B + 1)]
     public void Steuer_und_Sonderzeichen_ausserhalb_von_Leerraum_bleiben_erhalten(int codepoint) =>
         RezeptName.Von(new string((char)codepoint, 1)).Wert.Length.ShouldBe(1);
+
+    [Theory]
+    [InlineData("Torte\0Spezial")]
+    [InlineData("\0Torte")]
+    [InlineData("Torte\0")]
+    [InlineData("\0")]
+    public void Nullzeichen_im_Namen_ist_unzulaessig(string name) =>
+        Should.Throw<DomainRuleViolationException>(() => RezeptName.Von(name)).ShouldHaveCode("rezept.name_nullzeichen");
+
+    [Theory]
+    [InlineData("Mehl\0Typ 405")]
+    [InlineData("\0")]
+    public void Nullzeichen_in_der_Bezeichnung_ist_unzulaessig(string bezeichnung) =>
+        Should.Throw<DomainRuleViolationException>(() => Zutatenzeile.Von(bezeichnung, Gewicht.Erfasst(1)))
+            .ShouldHaveCode("zutat.bezeichnung_nullzeichen");
+
+    [Fact]
+    public void Nullzeichen_zwischen_Leerraum_ist_unzulaessig() =>
+        Should.Throw<DomainRuleViolationException>(() => RezeptName.Von(" \0 ")).ShouldHaveCode("rezept.name_nullzeichen");
 
     [Fact]
     public void Laenge_wird_in_Codepoints_gezaehlt() =>

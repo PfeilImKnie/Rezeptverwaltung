@@ -17,9 +17,24 @@ builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 builder.Services.AddOpenApi("v1");
 builder.Services.AddHealthChecks();
 
-builder.Services.AddRezepturModule();
+// Verbindung kommt lokal von Aspire (AppHost), im Betrieb aus der Umgebung (ConnectionStrings__rezeptverwaltung).
+var verbindung = builder.Configuration.GetConnectionString("rezeptverwaltung");
+if (string.IsNullOrWhiteSpace(verbindung))
+{
+    throw new InvalidOperationException(
+        "Verbindungszeichenfolge 'ConnectionStrings:rezeptverwaltung' fehlt oder ist leer. Lokal über den AppHost starten: "
+        + "dotnet run --project src/Host/Rezeptverwaltung.AppHost");
+}
+
+builder.Services.AddRezepturModule(verbindung);
 
 var app = builder.Build();
+
+// Einzelinstanz-Betrieb: Migrationen beim Start (ADR 0011). Abschaltbar, z. B. für getrennte Migrationsläufe.
+if (app.Configuration.GetValue("Persistenz:MigrationenBeimStart", defaultValue: true))
+{
+    await app.Services.MigriereRezepturDatenbankAsync().ConfigureAwait(false);
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

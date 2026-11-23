@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Rezeptverwaltung.Rezeptur.Application.Ports;
 using Rezeptverwaltung.Rezeptur.Application.Rezepte;
@@ -10,9 +11,13 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure;
 /// <summary>Einziger öffentlicher Einstiegspunkt des Moduls „Rezeptur“ für den Host.</summary>
 public static class RezepturModule
 {
-    public static IServiceCollection AddRezepturModule(this IServiceCollection services)
+    public static IServiceCollection AddRezepturModule(this IServiceCollection services, string verbindungszeichenfolge)
     {
-        services.AddSingleton<IRezeptRepository, InMemoryRezeptRepository>();
+        ArgumentException.ThrowIfNullOrWhiteSpace(verbindungszeichenfolge);
+
+        services.AddDbContext<RezepturDbContext>(optionen => RezepturDbContext.Konfiguriere(optionen, verbindungszeichenfolge));
+        services.AddHealthChecks().AddDbContextCheck<RezepturDbContext>("rezeptur-datenbank");
+        services.AddScoped<IRezeptRepository, EfRezeptRepository>();
         services.AddScoped<RezeptAnlegenHandler>();
         services.AddScoped<RezeptAbfragenHandler>();
         services.AddScoped<RezeptSkalierenHandler>();
@@ -21,4 +26,15 @@ public static class RezepturModule
 
     public static IEndpointRouteBuilder MapRezepturModule(this IEndpointRouteBuilder endpoints) =>
         RezepturEndpoints.MapRezeptur(endpoints);
+
+    /// <summary>Bringt das Datenbankschema des Moduls auf den neuesten Stand (ADR 0011).</summary>
+    public static async Task MigriereRezepturDatenbankAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
+    {
+        var scope = services.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            var datenbank = scope.ServiceProvider.GetRequiredService<RezepturDbContext>();
+            await datenbank.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
 }

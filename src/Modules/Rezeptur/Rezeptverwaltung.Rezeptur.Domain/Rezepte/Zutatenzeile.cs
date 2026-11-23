@@ -28,6 +28,10 @@ public sealed record Zutatenzeile
             Freitext.Laenge(roh) > MaximaleBezeichnungsLaenge,
             "zutat.bezeichnung_zu_lang",
             $"Eine Zutatenbezeichnung darf höchstens {MaximaleBezeichnungsLaenge} Zeichen lang sein.");
+        DomainRuleViolationException.Wenn(
+            Freitext.EnthaeltNullzeichen(roh),
+            "zutat.bezeichnung_nullzeichen",
+            "Eine Zutatenbezeichnung darf kein Nullzeichen (U+0000) enthalten.");
         var bereinigt = Freitext.OhneLeerraumAmRand(roh);
         DomainRuleViolationException.Wenn(bereinigt.Length == 0, "zutat.bezeichnung_leer", "Eine Zutat braucht eine Bezeichnung.");
         DomainRuleViolationException.Wenn(menge.IstNull, "zutat.menge_null", "Eine Zutat muss eine Menge größer als 0 g haben.");

@@ -30,6 +30,7 @@ jobs:
       # NuGet-Audit: bekannte Schwachstellen brechen bereits das Restore/Build (Directory.Build.props).
       - run: dotnet format Rezeptverwaltung.slnx --verify-no-changes --no-restore
       - run: dotnet build Rezeptverwaltung.slnx -c Release --no-restore
+      # Integrationstests starten PostgreSQL per Testcontainers (Docker ist auf dem Runner vorhanden).
       - run: >
           dotnet test --solution Rezeptverwaltung.slnx -c Release --no-build
           --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
@@ -65,6 +66,19 @@ jobs:
   api-vertrag:
     name: API-Vertrag (Schemathesis)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: docker.io/library/postgres:18-alpine
+        env:
+          POSTGRES_USER: rezeptverwaltung
+          POSTGRES_PASSWORD: nur-fuer-ci
+          POSTGRES_DB: rezeptverwaltung
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rezeptverwaltung"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ConnectionStrings__rezeptverwaltung: Host=127.0.0.1;Port=5432;Database=rezeptverwaltung;Username=rezeptverwaltung;Password=nur-fuer-ci
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6

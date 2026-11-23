@@ -13,6 +13,11 @@ internal static class Freitext
     /// <summary>Anzahl Codepoints. Ungepaarte Surrogates zählen je als eins.</summary>
     public static int Laenge(string text) => text.EnumerateRunes().Count();
 
+    /// <summary>
+    /// U+0000 ist in Freitext unzulässig: PostgreSQL kann es weder in <c>text</c> noch in <c>jsonb</c> speichern (ADR 0011).
+    /// </summary>
+    public static bool EnthaeltNullzeichen(string text) => text.Contains('\0', StringComparison.Ordinal);
+
     public static string OhneLeerraumAmRand(string text)
     {
         var anfang = 0;

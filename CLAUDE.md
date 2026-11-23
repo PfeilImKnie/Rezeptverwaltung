@@ -9,7 +9,10 @@ dotnet build Rezeptverwaltung.slnx                        # Warnungen = Fehler
 dotnet test --solution Rezeptverwaltung.slnx              # Microsoft Testing Platform (global.json)
 dotnet format Rezeptverwaltung.slnx                       # vor jedem Commit
 cd tests/Rezeptverwaltung.Rezeptur.Domain.Tests && dotnet tool restore && dotnet stryker   # Mutation Testing, Schwelle 80 %
-dotnet run --project src/Host/Rezeptverwaltung.Api        # API, OpenAPI unter /openapi/v1.json
+dotnet run --project src/Host/Rezeptverwaltung.AppHost    # lokal: Aspire startet PostgreSQL (Podman/Docker) + API auf :5080
+# Neue Migration nach Modelländerung (Test „Modell_und_Migrationen_stimmen_ueberein“ erzwingt das):
+dotnet ef migrations add <Name> --project src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Infrastructure \
+  --startup-project src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Infrastructure --output-dir Persistence/Migrations
 ```
 
 ## Arbeitsweise (verbindlich)
@@ -29,8 +32,9 @@ src/Modules/<Kontext>/
   *.Application                   Use-Case-Handler + Ports (Interfaces)
   *.Infrastructure                Adapter: Http/ (Endpoints, API-Verträge), Persistence/
                                   öffentlich nur <Kontext>Module (AddXModule / MapXModule)
-src/Host/Rezeptverwaltung.Api     Komposition, Problem Details, OpenAPI
-tests/                            Domain-, Application-, API-, Architekturtests
+src/Host/Rezeptverwaltung.Api     Komposition, Problem Details, OpenAPI, Migration beim Start
+src/Host/Rezeptverwaltung.AppHost Aspire (nur lokale Entwicklung)
+tests/                            Domain-, Application-, API-, Architektur- und Persistenztests (Testcontainers)
 ```
 
 - Module greifen nicht aufeinander zu. Neue Module werden in `tests/Rezeptverwaltung.ArchitectureTests/ArchitekturTests.cs` → `Module` eingetragen.
@@ -39,6 +43,8 @@ tests/                            Domain-, Application-, API-, Architekturtests
 - Texte strikt: Länge und Leerraum über `Freitext` (Codepoints, ausdrücklich aufgezählter Leerraum), nie `string.Length` oder `Trim()` direkt. Im Vertrag nie `\s` verwenden, weil es je nach Regex-Engine anders ausgelegt wird; stattdessen dieselbe Menge wie `Freitext.IstLeerraum` aufzählen (ADR 0009).
 - Value Objects als `readonly record struct` oder `sealed record` mit Factory (`Von`, `Erfasst`) und Validierung. Aggregate sind `sealed`.
 - Handler sind einfache Klassen, kein MediatR.
+- Persistenz (ADR 0011): ein Schema pro Modul, ein Datensatz pro Aggregat, Listen im Aggregat als JSONB (Reihenfolge!). Mapping nur in `Infrastructure/Persistence`, Domain bleibt EF-frei. Value Objects über `HasConversion` mit den Domain-Factories.
+- Tests gegen die Datenbank immer mit echtem PostgreSQL (Testcontainers), nie mit EF-InMemory oder SQLite.
 
 ## Konventionen
 

@@ -2,6 +2,7 @@
   <Folder Name="/src/" />
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Rezeptverwaltung.Api/Rezeptverwaltung.Api.csproj" />
+    <Project Path="src/Host/Rezeptverwaltung.AppHost/Rezeptverwaltung.AppHost.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
   <Folder Name="/src/Modules/Rezeptur/">
@@ -17,5 +18,6 @@
     <Project Path="tests/Rezeptverwaltung.ArchitectureTests/Rezeptverwaltung.ArchitectureTests.csproj" />
     <Project Path="tests/Rezeptverwaltung.Rezeptur.Application.Tests/Rezeptverwaltung.Rezeptur.Application.Tests.csproj" />
     <Project Path="tests/Rezeptverwaltung.Rezeptur.Domain.Tests/Rezeptverwaltung.Rezeptur.Domain.Tests.csproj" />
+    <Project Path="tests/Rezeptverwaltung.Rezeptur.Infrastructure.Tests/Rezeptverwaltung.Rezeptur.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>
