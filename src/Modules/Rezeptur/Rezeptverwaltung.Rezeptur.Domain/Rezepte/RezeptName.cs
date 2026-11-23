@@ -12,12 +12,13 @@ public sealed record RezeptName
 
     public static RezeptName Von(string? wert)
     {
-        var bereinigt = wert?.Trim() ?? string.Empty;
-        DomainRuleViolationException.Wenn(bereinigt.Length == 0, "rezept.name_leer", "Ein Rezept braucht einen Namen.");
+        var roh = wert ?? string.Empty;
         DomainRuleViolationException.Wenn(
-            bereinigt.Length > MaximaleLaenge,
+            Freitext.Laenge(roh) > MaximaleLaenge,
             "rezept.name_zu_lang",
             $"Ein Rezeptname darf höchstens {MaximaleLaenge} Zeichen lang sein.");
+        var bereinigt = Freitext.OhneLeerraumAmRand(roh);
+        DomainRuleViolationException.Wenn(bereinigt.Length == 0, "rezept.name_leer", "Ein Rezept braucht einen Namen.");
         return new RezeptName(bereinigt);
     }
 

@@ -12,4 +12,4 @@ Neue ADRs entstehen mit dem Skill `/adr` aus der [Vorlage](0000-vorlage.md). Reg
 | [0006](0006-teststrategie.md) | Teststrategie: alles automatisiert verifiziert | Akzeptiert |
 | [0007](0007-pr-workflow-test-review-doku.md) | Jeder PR enthält unabhängigen Test, Code-Review und Dokumentation | Akzeptiert |
 | [0008](0008-persistenz-postgresql-mit-ef-core.md) | Persistenz mit PostgreSQL und EF Core | Akzeptiert (Umsetzung ausstehend) |
-| [0009](0009-fehlerstatus-409-und-422-und-strikte-zahlen.md) | Fehlerstatus 422 (Eingabe) / 409 (Zustand), Zahlen strikt nach Vertrag | Akzeptiert |
+| [0009](0009-fehlerstatus-409-und-422-und-strikte-zahlen.md) | Fehlerstatus 422 (Eingabe) / 409 (Zustand), Zahlen und Texte strikt nach Vertrag | Akzeptiert |

@@ -35,6 +35,7 @@ tests/                            Domain-, Application-, API-, Architekturtests
 - Module greifen nicht aufeinander zu. Neue Module werden in `tests/Rezeptverwaltung.ArchitectureTests/ArchitekturTests.cs` → `Module` eingetragen.
 - Fachregeln: `DomainRuleViolationException.Wenn(...)` = ungültige Eingabe → 422, `.ZustandWenn(...)` = Zustand lässt es nicht zu → 409, jeweils mit `code`. Eingaben vor dem Zustand prüfen. Codes sind stabil (`bereich.regel`, snake_case) (ADR 0009).
 - Zahlen strikt: keine Zahlen als JSON-Strings; Gramm in Query-Parametern über den Typ `Gramm` binden, nie direkt als `decimal`, weil sonst "1,5" als 15 gelesen wird.
+- Texte strikt: Länge und Leerraum über `Freitext` (Codepoints, ausdrücklich aufgezählter Leerraum), nie `string.Length` oder `Trim()` direkt. Im Vertrag nie `\s` verwenden, weil es je nach Regex-Engine anders ausgelegt wird; stattdessen dieselbe Menge wie `Freitext.IstLeerraum` aufzählen (ADR 0009).
 - Value Objects als `readonly record struct` oder `sealed record` mit Factory (`Von`, `Erfasst`) und Validierung. Aggregate sind `sealed`.
 - Handler sind einfache Klassen, kein MediatR.
 

@@ -106,6 +106,33 @@ public sealed class RezepteApiTests(ApiFactory factory) : IClassFixture<ApiFacto
         problem.GetProperty("status").GetInt32().ShouldBe(422);
     }
 
+    [Theory]
+    [InlineData(0x0085)] // Schemathesis-Fund: galt im Vertrag als sichtbar, .NET-Trim entfernte es
+    [InlineData(0x001C)] // Review-Fund: Leerraum für Python, nicht für ECMAScript
+    [InlineData(0xFEFF)] // Review-Fund: Leerraum für ECMAScript, nicht für Python
+    public async Task Bezeichnung_nur_aus_Leerraum_liefert_422(int codepoint)
+    {
+        var antwort = await _client.PostAsJsonAsync(
+            "/api/v1/rezepte",
+            new { name = "Test", zutaten = new[] { new { bezeichnung = new string((char)codepoint, 1), gramm = 1 } } },
+            _ct);
+
+        antwort.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+        (await antwort.Content.ReadFromJsonAsync<JsonElement>(_ct)).GetProperty("code").GetString().ShouldBe("zutat.bezeichnung_leer");
+    }
+
+    [Theory]
+    [InlineData(200, HttpStatusCode.Created)]
+    [InlineData(201, HttpStatusCode.UnprocessableEntity)]
+    public async Task Namenslaenge_wird_in_Codepoints_gezaehlt(int anzahlEmoji, HttpStatusCode erwartet)
+    {
+        var name = string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x1F382), anzahlEmoji));
+
+        var antwort = await _client.PostAsJsonAsync("/api/v1/rezepte", new { name, zutaten = Array.Empty<object>() }, _ct);
+
+        antwort.StatusCode.ShouldBe(erwartet);
+    }
+
     [Fact]
     public async Task Fehlendes_Pflichtfeld_liefert_400()
     {
