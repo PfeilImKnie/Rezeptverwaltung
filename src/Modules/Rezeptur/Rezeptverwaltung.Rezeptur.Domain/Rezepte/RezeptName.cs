@@ -17,6 +17,10 @@ public sealed record RezeptName
             Freitext.Laenge(roh) > MaximaleLaenge,
             "rezept.name_zu_lang",
             $"Ein Rezeptname darf höchstens {MaximaleLaenge} Zeichen lang sein.");
+        DomainRuleViolationException.Wenn(
+            Freitext.EnthaeltNullzeichen(roh),
+            "rezept.name_nullzeichen",
+            "Ein Rezeptname darf kein Nullzeichen (U+0000) enthalten.");
         var bereinigt = Freitext.OhneLeerraumAmRand(roh);
         DomainRuleViolationException.Wenn(bereinigt.Length == 0, "rezept.name_leer", "Ein Rezept braucht einen Namen.");
         return new RezeptName(bereinigt);

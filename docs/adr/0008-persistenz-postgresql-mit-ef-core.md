@@ -1,6 +1,6 @@
 # 0008 – Persistenz mit PostgreSQL und EF Core, In-Memory als Übergang
 
-- **Status:** Akzeptiert (Umsetzung ausstehend)
+- **Status:** Akzeptiert, umgesetzt; Details in [0011](0011-abbildung-der-aggregate-in-postgresql.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** Infrastructure aller Module
 

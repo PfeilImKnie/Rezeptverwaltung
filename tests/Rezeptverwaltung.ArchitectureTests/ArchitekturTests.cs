@@ -82,7 +82,9 @@ public sealed class ArchitekturTests
     {
         var m = Module.Single(x => x.Name == modul);
 
-        Classes().That().ResideInAssembly(m.Infrastructure).And().ArePublic().Should()
+        // Ausnahme: von EF Core generierte Migrationen sind zwingend öffentlich.
+        Classes().That().ResideInAssembly(m.Infrastructure).And().ArePublic()
+            .And().DoNotResideInNamespaceMatching(@"\.Persistence\.Migrations$").Should()
             .HaveNameEndingWith("Module")
             .Check(Architektur);
     }
