@@ -15,11 +15,17 @@ internal static class RezepturEndpoints
 {
     public static IEndpointRouteBuilder MapRezeptur(IEndpointRouteBuilder endpoints)
     {
-        var rezepte = endpoints.MapGroup("/api/v1/rezepte").WithTags("Rezepte");
+        // Alle Endpunkte verlangen Anmeldung (ADR 0015); welche Rolle was darf, prüfen die Use Cases (403).
+        var rezepte = endpoints.MapGroup("/api/v1/rezepte")
+            .WithTags("Rezepte")
+            .RequireAuthorization()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden);
 
         rezepte.MapPost("/", RezeptAnlegenAsync)
             .WithName("rezeptAnlegen")
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         rezepte.MapGet("/{id:guid}", RezeptAbfragenAsync)
@@ -62,6 +68,7 @@ internal static class RezepturEndpoints
         entwurf.MapPut("/", EntwurfBearbeitenAsync)
             .WithName("entwurfBearbeiten")
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
         entwurf.MapDelete("/", EntwurfVerwerfenAsync).WithName("entwurfVerwerfen");

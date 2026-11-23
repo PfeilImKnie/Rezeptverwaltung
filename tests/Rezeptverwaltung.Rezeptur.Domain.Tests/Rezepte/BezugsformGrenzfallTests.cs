@@ -19,7 +19,7 @@ public sealed class BezugsformGrenzfallTests
     private static Zutatenzeile Zeile(string bezeichnung, decimal gramm) => Zutatenzeile.Von(bezeichnung, Gewicht.Erfasst(gramm));
 
     private static Rezept MitForm(Bezugsform? form, params Zutatenzeile[] zeilen) =>
-        Rezept.Anlegen(RezeptName.Von("Sachertorte"), zeilen, Testzeit.Jetzt, form);
+        Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Sachertorte"), zeilen, Testzeit.Jetzt, form);
 
     // ---- Grenzwerte je Maß und Formart ----
 
@@ -145,7 +145,7 @@ public sealed class BezugsformGrenzfallTests
     public void Eigenschaft_Umrechnen_erhaelt_die_Verhaeltnisse_und_die_Fassung() =>
         Gen.Select(Form, Form, Generatoren.Zutatenzeile.List[1, 15]).Sample((bezug, ziel, zeilen) =>
         {
-            var fassung = Rezept.Anlegen(RezeptName.Von("Probe"), zeilen, Testzeit.Jetzt, bezug).MassgeblicheFassung;
+            var fassung = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Probe"), zeilen, Testzeit.Jetzt, bezug).MassgeblicheFassung;
             var vorher = fassung.Zutaten.Select(z => z.Menge.Gramm).ToList();
 
             var umrechnung = fassung.UmgerechnetAuf(ziel);

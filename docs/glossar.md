@@ -5,8 +5,10 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 
 | Begriff | Bedeutung | Im Code |
 |---|---|---|
-| **Rezept** | Eine Rezeptur mit Namen und ihren Fassungen. Konsistenzgrenze (Aggregat). | `Rezept` |
-| **Fassung** | Ein Stand eines Rezepts mit eigener Zutatenliste, fortlaufend nummeriert (1, 2, 3 …). Nummern werden nie wiederverwendet, auch nicht nach dem Verwerfen eines Entwurfs. | `Fassung` |
+| **Betrieb** | Ein Mandant, z. B. eine Konditorei. Jedes Rezept gehört genau einem Betrieb; andere Betriebe sehen es nicht. Entspricht der Organisation im Identity Provider. | `BetriebId` |
+| **Rolle** | Recht einer Person in ihrem Betrieb: **Mitarbeiter/in** (lesen, umrechnen), **Konditor/in** (zusätzlich anlegen, Entwürfe bearbeiten/verwerfen), **Inhaber/in** (zusätzlich freigeben). | `Rolle` |
+| **Rezept** | Eine Rezeptur mit Namen und ihren Fassungen, gehört einem Betrieb. Konsistenzgrenze (Aggregat). | `Rezept` |
+| **Fassung** | Ein Stand eines Rezepts mit eigener Zutatenliste (höchstens 100 Zeilen), fortlaufend nummeriert (1, 2, 3 …). Nummern werden nie wiederverwendet, auch nicht nach dem Verwerfen eines Entwurfs. | `Fassung` |
 | **Entwurf** | Fassung in Arbeit: darf geändert werden, gilt aber noch nicht. Es gibt höchstens einen. Ein neues Rezept beginnt mit Fassung 1 als Entwurf; ein späterer Entwurf entsteht als Kopie der aktuellen Fassung. | `FassungsStatus.Entwurf` |
 | **Freigabe** | Macht den Entwurf zur geltenden Fassung. Danach ist die Fassung unveränderlich. Eine Fassung ohne Zutaten kann nicht freigegeben werden. | `Rezept.EntwurfFreigeben` |
 | **Verwerfen** | Löscht den Entwurf. Nicht möglich, wenn er die einzige Fassung des Rezepts ist. | `Rezept.EntwurfVerwerfen` |

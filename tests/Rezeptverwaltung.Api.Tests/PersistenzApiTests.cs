@@ -29,12 +29,26 @@ public sealed class GemeinsameDatenbank : IAsyncLifetime
 /// <summary>Eine API-Instanz mit frei wählbarer Konfiguration. Jede Instanz entspricht einem Start der API.</summary>
 internal sealed class KonfigurierteApi(IReadOnlyDictionary<string, string?> einstellungen) : WebApplicationFactory<Program>
 {
+    // Seit ADR 0015 braucht jede API-Instanz einen OIDC-Aussteller und Clients einen Token. Die Einstellungen
+    // des Tests überschreiben die Vorgaben (UseSetting: letzter Wert gewinnt).
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        TestLogin.StartenAsync().GetAwaiter().GetResult();
+        foreach (var (schluessel, wert) in TestLogin.Einstellungen)
+        {
+            builder.UseSetting(schluessel, wert);
+        }
+
         foreach (var (schluessel, wert) in einstellungen)
         {
             builder.UseSetting(schluessel, wert);
         }
+    }
+
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Authorization = TestLogin.Header(TestLogin.TokenAsync(Persona.InhaberA).GetAwaiter().GetResult());
     }
 
     public static KonfigurierteApi Mit(string verbindung, params (string Schluessel, string? Wert)[] weitere) =>

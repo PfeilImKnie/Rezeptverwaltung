@@ -12,7 +12,15 @@ public sealed class Rezept : AggregateRoot<RezeptId>
 {
     private readonly List<Fassung> _fassungen = [];
 
-    private Rezept(RezeptId id, RezeptName name) : base(id) => Name = name;
+    private Rezept(RezeptId id, BetriebId betriebId, RezeptName name)
+        : base(id)
+    {
+        BetriebId = betriebId;
+        Name = name;
+    }
+
+    /// <summary>Betrieb, dem das Rezept gehört (ADR 0015). Wird beim Anlegen festgelegt und ändert sich nie.</summary>
+    public BetriebId BetriebId { get; private set; }
 
     public RezeptName Name { get; private set; }
 
@@ -43,11 +51,16 @@ public sealed class Rezept : AggregateRoot<RezeptId>
     public Gewicht Gesamtgewicht => MassgeblicheFassung.Gesamtgewicht;
 
     /// <summary>Legt ein neues Rezept an. Fassung 1 beginnt als Entwurf.</summary>
-    public static Rezept Anlegen(RezeptName name, IEnumerable<Zutatenzeile> zutaten, DateTimeOffset zeitpunkt, Bezugsform? bezugsform = null)
+    public static Rezept Anlegen(
+        BetriebId betrieb,
+        RezeptName name,
+        IEnumerable<Zutatenzeile> zutaten,
+        DateTimeOffset zeitpunkt,
+        Bezugsform? bezugsform = null)
     {
         ArgumentNullException.ThrowIfNull(name); // zutaten prüft Fassung.NeuerEntwurf
 
-        var rezept = new Rezept(RezeptId.Neu(), name);
+        var rezept = new Rezept(RezeptId.Neu(), betrieb, name);
         rezept.LetzteFassungsnummer = 1;
         rezept._fassungen.Add(Fassung.NeuerEntwurf(rezept.LetzteFassungsnummer, zutaten, bezugsform, zeitpunkt));
         rezept.Melde(new RezeptAngelegt(rezept.Id));
@@ -65,6 +78,13 @@ public sealed class Rezept : AggregateRoot<RezeptId>
             "Es gibt bereits einen Entwurf. Erst freigeben oder verwerfen.");
 
         var vorlage = AktuelleFassung!;
+
+        // Fassungen aus der Zeit vor der Obergrenze (Issue #6) können mehr Zeilen haben. Der Zustand der Vorlage
+        // verhindert den Entwurf (409), nicht eine Eingabe der Person (422).
+        DomainRuleViolationException.ZustandWenn(
+            vorlage.Zutaten.Count > Fassung.MaximaleZutatenzeilen,
+            "fassung.zu_viele_zutaten",
+            $"Die aktuelle Fassung hat mehr als {Fassung.MaximaleZutatenzeilen} Zutatenzeilen und kann nicht als Entwurf übernommen werden.");
         LetzteFassungsnummer++;
         var entwurf = Fassung.NeuerEntwurf(LetzteFassungsnummer, vorlage.Zutaten, vorlage.Bezugsform, zeitpunkt);
         _fassungen.Add(entwurf);

@@ -9,7 +9,7 @@ public sealed class RezeptUseCaseTests
     private readonly CancellationToken _ct = TestContext.Current.CancellationToken;
 
     private Task<RezeptDetails> SachermasseAnlegenAsync() =>
-        new RezeptAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(
+        new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(
             new RezeptAnlegen(
                 "Sachermasse",
                 [new ZutatEingabe("Butter", 140), new ZutatEingabe("Zucker", 140), new ZutatEingabe("Eier", 280.5m)]),
@@ -29,7 +29,7 @@ public sealed class RezeptUseCaseTests
     [Fact]
     public async Task RezeptAnlegen_speichert_nichts_bei_verletzter_Fachregel()
     {
-        var handler = new RezeptAnlegenHandler(_repository, Testzeit.Anbieter);
+        var handler = new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA);
 
         await Should.ThrowAsync<DomainRuleViolationException>(
             () => handler.HandleAsync(new RezeptAnlegen("Fehler", [new ZutatEingabe("Salz", 0.001m)]), _ct));
@@ -42,21 +42,21 @@ public sealed class RezeptUseCaseTests
     {
         var angelegt = await SachermasseAnlegenAsync();
 
-        var details = await new RezeptAbfragenHandler(_repository).HandleAsync(angelegt.Id, _ct);
+        var details = await new RezeptAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(angelegt.Id, _ct);
 
         details.ShouldBe(angelegt, new RezeptDetailsVergleich());
     }
 
     [Fact]
     public async Task RezeptAbfragen_liefert_null_fuer_unbekannte_Id() =>
-        (await new RezeptAbfragenHandler(_repository).HandleAsync(Guid.NewGuid(), _ct)).ShouldBeNull();
+        (await new RezeptAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(Guid.NewGuid(), _ct)).ShouldBeNull();
 
     [Fact]
     public async Task RezeptSkalieren_rundet_Mengen_auf_hundertstel_Gramm()
     {
         var angelegt = await SachermasseAnlegenAsync();
 
-        var skaliert = await new RezeptSkalierenHandler(_repository).HandleAsync(new RezeptSkalieren(angelegt.Id, 1000), _ct);
+        var skaliert = await new RezeptSkalierenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new RezeptSkalieren(angelegt.Id, 1000), _ct);
 
         skaliert.ShouldNotBeNull();
         skaliert.ZielgewichtGramm.ShouldBe(1000m);
@@ -66,7 +66,7 @@ public sealed class RezeptUseCaseTests
 
     [Fact]
     public async Task RezeptSkalieren_liefert_null_fuer_unbekannte_Id() =>
-        (await new RezeptSkalierenHandler(_repository).HandleAsync(new RezeptSkalieren(Guid.NewGuid(), 100), _ct)).ShouldBeNull();
+        (await new RezeptSkalierenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new RezeptSkalieren(Guid.NewGuid(), 100), _ct)).ShouldBeNull();
 
     [Fact]
     public async Task RezeptSkalieren_lehnt_zu_genaues_Zielgewicht_ab()
@@ -74,7 +74,7 @@ public sealed class RezeptUseCaseTests
         var angelegt = await SachermasseAnlegenAsync();
 
         (await Should.ThrowAsync<DomainRuleViolationException>(
-                () => new RezeptSkalierenHandler(_repository).HandleAsync(new RezeptSkalieren(angelegt.Id, 100.001m), _ct)))
+                () => new RezeptSkalierenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new RezeptSkalieren(angelegt.Id, 100.001m), _ct)))
             .Code.ShouldBe("gewicht.zu_genau");
     }
 

@@ -4,6 +4,11 @@ using Rezeptverwaltung.Rezeptur.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Obergrenze für Anfragen (Issue #6): Rezepte sind klein; große Körper sind Fehler oder Angriffe.
+// Kestrel begrenzt auch Anfragen ohne Längenangabe (chunked); die Prüfung unten greift unabhängig vom Server.
+const long MaximaleAnfrageBytes = 1_000_000;
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = MaximaleAnfrageBytes);
+
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     // Fehlende oder null-Pflichtfelder führen zu 400 statt zu halb initialisierten Objekten.
@@ -26,6 +31,7 @@ if (string.IsNullOrWhiteSpace(verbindung))
         + "dotnet run --project src/Host/Rezeptverwaltung.AppHost");
 }
 
+builder.Services.AddAnmeldung(builder.Configuration, builder.Environment);
 builder.Services.AddRezepturModule(verbindung);
 
 var app = builder.Build();
@@ -39,8 +45,23 @@ if (app.Configuration.GetValue("Persistenz:MigrationenBeimStart", defaultValue: 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-app.MapOpenApi();
-app.MapHealthChecks("/health");
+app.Use(async (kontext, weiter) =>
+{
+    if (kontext.Request.ContentLength > MaximaleAnfrageBytes)
+    {
+        kontext.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+        return;
+    }
+
+    await weiter(kontext).ConfigureAwait(false);
+});
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Bewusst ohne Anmeldung: Vertrag und Gesundheitsprüfung (für Caddy/Monitoring).
+app.MapOpenApi().AllowAnonymous();
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapRezepturModule();
 
 await app.RunAsync().ConfigureAwait(false);

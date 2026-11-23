@@ -43,7 +43,7 @@ Der Ablauf ist im Skill `/pr-erstellen` festgelegt.
 
 ## 5. Sicherheit
 
-- [ ] Neue Endpoints sind authentifiziert und autorisiert (sobald ADR 0004 umgesetzt ist).
+- [ ] Neue Endpoints verlangen Anmeldung, die Use Cases prüfen das Recht der Rolle, und Daten anderer Betriebe sind nicht erreichbar (404); mit Tests für Rollen und Betriebe (ADR 0015).
 - [ ] Alle Eingaben werden begrenzt (Länge, Wertebereich, Genauigkeit), im Vertrag **und** im Domain-Modell.
 - [ ] Keine Secrets im Repository; Konfiguration über Umgebungsvariablen oder Secret Store.
 - [ ] Keine personenbezogenen Daten und keine Tokens in Logs.

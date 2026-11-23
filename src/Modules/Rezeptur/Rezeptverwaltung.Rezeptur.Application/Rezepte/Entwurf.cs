@@ -6,8 +6,8 @@ using static Rezeptverwaltung.Rezeptur.Application.Rezepte.Codes;
 namespace Rezeptverwaltung.Rezeptur.Application.Rezepte;
 
 // Arbeitsablauf mit Entwurf und Freigabe (ADR 0013). Jeder Handler: laden, Stand prüfen, Aggregat ändern, speichern.
-// Reihenfolge der Prüfungen: Rezept fehlt (null → 404) · Stand fehlt/veraltet (428/412) · Eingabe ungültig (422) ·
-// Zustand lässt es nicht zu (409).
+// Reihenfolge der Prüfungen: Recht fehlt (403) · Rezept fehlt oder gehört einem anderen Betrieb (null → 404) ·
+// Stand fehlt/veraltet (428/412) · Eingabe ungültig (422) · Zustand lässt es nicht zu (409).
 
 internal static class Codes
 {
@@ -15,11 +15,12 @@ internal static class Codes
     public const string StandVeraltet = "rezept.veraltet";
 }
 
-public sealed class EntwurfAnlegenHandler(IRezeptRepository repository, TimeProvider zeit)
+public sealed class EntwurfAnlegenHandler(IRezeptRepository repository, TimeProvider zeit, IAktuellerBenutzer benutzer)
 {
     public async Task<FassungDetails?> HandleAsync(Guid rezeptId, string? erwarteterStand, CancellationToken cancellationToken)
     {
-        var rezept = await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false);
+        var betrieb = ZugriffVerweigertException.Pruefen(benutzer, Rechte.Bearbeiten, "Entwurf anlegen");
+        var rezept = Rechte.NurEigenes(await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false), betrieb);
         if (rezept is null)
         {
             return null;
@@ -34,13 +35,14 @@ public sealed class EntwurfAnlegenHandler(IRezeptRepository repository, TimeProv
 
 public sealed record EntwurfBearbeiten(Guid RezeptId, IReadOnlyList<ZutatEingabe> Zutaten, string? ErwarteterStand, Form? Bezugsform = null);
 
-public sealed class EntwurfBearbeitenHandler(IRezeptRepository repository)
+public sealed class EntwurfBearbeitenHandler(IRezeptRepository repository, IAktuellerBenutzer benutzer)
 {
     public async Task<FassungDetails?> HandleAsync(EntwurfBearbeiten befehl, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(befehl);
 
-        var rezept = await repository.LadenAsync(new RezeptId(befehl.RezeptId), cancellationToken).ConfigureAwait(false);
+        var betrieb = ZugriffVerweigertException.Pruefen(benutzer, Rechte.Bearbeiten, "Entwurf bearbeiten");
+        var rezept = Rechte.NurEigenes(await repository.LadenAsync(new RezeptId(befehl.RezeptId), cancellationToken).ConfigureAwait(false), betrieb);
         if (rezept is null)
         {
             return null;
@@ -55,11 +57,12 @@ public sealed class EntwurfBearbeitenHandler(IRezeptRepository repository)
     }
 }
 
-public sealed class EntwurfFreigebenHandler(IRezeptRepository repository, TimeProvider zeit)
+public sealed class EntwurfFreigebenHandler(IRezeptRepository repository, TimeProvider zeit, IAktuellerBenutzer benutzer)
 {
     public async Task<FassungDetails?> HandleAsync(Guid rezeptId, string? erwarteterStand, CancellationToken cancellationToken)
     {
-        var rezept = await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false);
+        var betrieb = ZugriffVerweigertException.Pruefen(benutzer, Rechte.Freigeben, "Entwurf freigeben");
+        var rezept = Rechte.NurEigenes(await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false), betrieb);
         if (rezept is null)
         {
             return null;
@@ -72,12 +75,13 @@ public sealed class EntwurfFreigebenHandler(IRezeptRepository repository, TimePr
     }
 }
 
-public sealed class EntwurfVerwerfenHandler(IRezeptRepository repository)
+public sealed class EntwurfVerwerfenHandler(IRezeptRepository repository, IAktuellerBenutzer benutzer)
 {
     /// <returns>Der neue Stand des Rezepts; <c>null</c>, wenn es das Rezept nicht gibt.</returns>
     public async Task<string?> HandleAsync(Guid rezeptId, string? erwarteterStand, CancellationToken cancellationToken)
     {
-        var rezept = await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false);
+        var betrieb = ZugriffVerweigertException.Pruefen(benutzer, Rechte.Bearbeiten, "Entwurf verwerfen");
+        var rezept = Rechte.NurEigenes(await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false), betrieb);
         if (rezept is null)
         {
             return null;

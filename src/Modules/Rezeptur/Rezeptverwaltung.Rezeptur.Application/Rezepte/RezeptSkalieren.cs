@@ -1,5 +1,6 @@
 using Rezeptverwaltung.Rezeptur.Application.Ports;
 using Rezeptverwaltung.Rezeptur.Domain.Rezepte;
+using Rezeptverwaltung.SharedKernel;
 
 namespace Rezeptverwaltung.Rezeptur.Application.Rezepte;
 
@@ -39,14 +40,15 @@ public sealed record SkaliertesRezept(
     }
 }
 
-public sealed class RezeptSkalierenHandler(IRezeptRepository repository)
+public sealed class RezeptSkalierenHandler(IRezeptRepository repository, IAktuellerBenutzer benutzer)
 {
     /// <returns><c>null</c>, wenn es das Rezept oder die angegebene Fassung nicht gibt.</returns>
     public async Task<SkaliertesRezept?> HandleAsync(RezeptSkalieren abfrage, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(abfrage);
 
-        var (rezept, fassung) = await FassungLadenAsync(repository, abfrage.RezeptId, abfrage.Fassung, cancellationToken).ConfigureAwait(false);
+        var betrieb = ZugriffVerweigertException.Pruefen(benutzer, Rechte.Lesen, "Rezept umrechnen");
+        var (rezept, fassung) = await FassungLadenAsync(repository, betrieb, abfrage.RezeptId, abfrage.Fassung, cancellationToken).ConfigureAwait(false);
         if (fassung is null)
         {
             return null;
@@ -61,26 +63,28 @@ public sealed class RezeptSkalierenHandler(IRezeptRepository repository)
     /// <summary>Lädt Rezept und Fassung; ohne Nummer die maßgebliche Fassung.</summary>
     internal static async Task<(Rezept? Rezept, Fassung? Fassung)> FassungLadenAsync(
         IRezeptRepository repository,
+        BetriebId betrieb,
         Guid rezeptId,
         int? nummer,
         CancellationToken cancellationToken)
     {
-        var rezept = await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false);
+        var rezept = Rechte.NurEigenes(await repository.LadenAsync(new RezeptId(rezeptId), cancellationToken).ConfigureAwait(false), betrieb);
         var fassung = nummer is { } n ? rezept?.FassungMitNummer(n) : rezept?.MassgeblicheFassung;
         return (rezept, fassung);
     }
 }
 
 /// <summary>Rechnet eine Fassung auf eine andere Form um (über das Volumen, ADR 0014).</summary>
-public sealed class RezeptAufFormSkalierenHandler(IRezeptRepository repository)
+public sealed class RezeptAufFormSkalierenHandler(IRezeptRepository repository, IAktuellerBenutzer benutzer)
 {
     /// <returns><c>null</c>, wenn es das Rezept oder die angegebene Fassung nicht gibt.</returns>
     public async Task<SkaliertesRezept?> HandleAsync(RezeptAufFormSkalieren abfrage, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(abfrage);
 
+        var betrieb = ZugriffVerweigertException.Pruefen(benutzer, Rechte.Lesen, "Rezept umrechnen");
         var (rezept, fassung) = await RezeptSkalierenHandler
-            .FassungLadenAsync(repository, abfrage.RezeptId, abfrage.Fassung, cancellationToken)
+            .FassungLadenAsync(repository, betrieb, abfrage.RezeptId, abfrage.Fassung, cancellationToken)
             .ConfigureAwait(false);
         if (fassung is null)
         {

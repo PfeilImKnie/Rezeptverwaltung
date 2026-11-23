@@ -39,7 +39,8 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
 
     private async Task<Rezept> NeuLadenAsync(RezeptId id, string? verbindung = null)
     {
-        await using var kontext = postgres.NeuerKontext(verbindung);
+        // Seit ADR 0015: Migrierte Altdaten (eigene Datenbank) gehören dem Betrieb „altbestand“.
+        await using var kontext = postgres.NeuerKontext(verbindung, verbindung is null ? null : Testbenutzer.InhaberAltbestand);
         return (await new EfRezeptRepository(kontext).LadenAsync(id, _ct))!;
     }
 
@@ -72,7 +73,7 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
         var id = Guid.NewGuid();
         var verbindung = await AlteDatenbankMitAsync((id, "Mürbeteig", """[{"bezeichnung":"Mehl","gramm":300},{"bezeichnung":"Butter","gramm":200}]"""));
 
-        await using (var kontext = postgres.NeuerKontext(verbindung))
+        await using (var kontext = postgres.NeuerKontext(verbindung, Testbenutzer.InhaberAltbestand))
         {
             var repository = new EfRezeptRepository(kontext);
             var rezept = (await repository.LadenAsync(new RezeptId(id), _ct))!;
@@ -92,7 +93,7 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
     [Fact]
     public async Task Gleichzeitig_angelegte_Entwuerfe_ergeben_einen_Konflikt_und_hoechstens_einen_Entwurf()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Sachermasse"), [Zeile("Butter", 140)], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Sachermasse"), [Zeile("Butter", 140)], Testzeit.Jetzt);
         rezept.EntwurfFreigeben(Testzeit.Jetzt);
         await AnlegenAsync(rezept);
 
@@ -117,7 +118,7 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
     {
         // Alexa gibt frei, während am Tablet der Entwurf noch geändert wurde: Freigegeben würde sonst ein Stand,
         // den niemand gesehen hat, oder die Tablet-Änderung verschwände still.
-        var rezept = await AnlegenAsync(Rezept.Anlegen(RezeptName.Von("Ganache"), [Zeile("Kuvertüre", 200)], Testzeit.Jetzt));
+        var rezept = await AnlegenAsync(Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Ganache"), [Zeile("Kuvertüre", 200)], Testzeit.Jetzt));
 
         await using var tablet = postgres.NeuerKontext();
         await using var alexa = postgres.NeuerKontext();
@@ -137,7 +138,7 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
     [Fact]
     public async Task Nacheinander_geladene_Aenderungen_ergeben_keinen_falschen_Konflikt()
     {
-        var rezept = await AnlegenAsync(Rezept.Anlegen(RezeptName.Von("Biskuit"), [Zeile("Eier", 300)], Testzeit.Jetzt));
+        var rezept = await AnlegenAsync(Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Biskuit"), [Zeile("Eier", 300)], Testzeit.Jetzt));
 
         for (var i = 1; i <= 3; i++)
         {
@@ -158,7 +159,7 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
         // ein späterer Abruf muss genau denselben Zeitpunkt zeigen.
         var erstellt = Testzeit.Jetzt.AddTicks(1_234_567);
         var freigegeben = Testzeit.Jetzt.AddTicks(9_876_543);
-        var rezept = Rezept.Anlegen(RezeptName.Von("Florentiner"), [Zeile("Mandeln", 200)], erstellt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Florentiner"), [Zeile("Mandeln", 200)], erstellt);
         rezept.EntwurfFreigeben(freigegeben);
         await AnlegenAsync(rezept);
 
@@ -171,7 +172,7 @@ public sealed class FassungenPersistenzGrenzfallTests(PostgresFixture postgres) 
     [Fact]
     public async Task Verwerfen_auf_veraltetem_Stand_wird_abgewiesen()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Linzer"), [Zeile("Mehl", 300)], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Linzer"), [Zeile("Mehl", 300)], Testzeit.Jetzt);
         rezept.EntwurfFreigeben(Testzeit.Jetzt);
         rezept.EntwurfAnlegen(Testzeit.Jetzt);
         await AnlegenAsync(rezept);

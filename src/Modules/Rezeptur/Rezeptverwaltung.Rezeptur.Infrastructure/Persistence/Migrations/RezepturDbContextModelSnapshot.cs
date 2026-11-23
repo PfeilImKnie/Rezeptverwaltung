@@ -29,6 +29,12 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BetriebId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("betrieb_id");
+
                     b.Property<int>("LetzteFassungsnummer")
                         .HasColumnType("integer")
                         .HasColumnName("letzte_fassungsnummer");
@@ -46,6 +52,8 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BetriebId");
+
                     b.ToTable("rezepte", "rezeptur");
                 });
 
@@ -58,10 +66,11 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
                             b1.Property<int>("__synthesizedOrdinal")
                                 .ValueGeneratedOnAdd();
 
-                            b1.Property<DateTimeOffset>("ErstelltAm")
+                            b1.Property<string>("ErstelltAm")
+                                .IsRequired()
                                 .HasJsonPropertyName("erstelltAm");
 
-                            b1.Property<DateTimeOffset?>("FreigegebenAm")
+                            b1.Property<string>("FreigegebenAm")
                                 .HasJsonPropertyName("freigegebenAm");
 
                             b1.Property<int>("Nummer")
@@ -81,6 +90,38 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("RezeptId");
+
+                            b1.OwnsOne("Rezeptverwaltung.Rezeptur.Domain.Rezepte.Bezugsform", "Bezugsform", b2 =>
+                                {
+                                    b2.Property<Guid>("FassungRezeptId");
+
+                                    b2.Property<int>("Fassung__synthesizedOrdinal");
+
+                                    b2.Property<string>("Art")
+                                        .IsRequired()
+                                        .HasJsonPropertyName("art");
+
+                                    b2.Property<decimal?>("BreiteCm")
+                                        .HasJsonPropertyName("breiteCm");
+
+                                    b2.Property<decimal?>("DurchmesserCm")
+                                        .HasJsonPropertyName("durchmesserCm");
+
+                                    b2.Property<decimal>("HoeheCm")
+                                        .HasJsonPropertyName("hoeheCm");
+
+                                    b2.Property<decimal?>("LaengeCm")
+                                        .HasJsonPropertyName("laengeCm");
+
+                                    b2.HasKey("FassungRezeptId", "Fassung__synthesizedOrdinal");
+
+                                    b2.ToTable("rezepte", "rezeptur");
+
+                                    b2.HasJsonPropertyName("bezugsform");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("FassungRezeptId", "Fassung__synthesizedOrdinal");
+                                });
 
                             b1.OwnsMany("Rezeptverwaltung.Rezeptur.Domain.Rezepte.Zutatenzeile", "Zutaten", b2 =>
                                 {
@@ -107,6 +148,8 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence.Migrations
                                     b2.WithOwner()
                                         .HasForeignKey("FassungRezeptId", "Fassung__synthesizedOrdinal");
                                 });
+
+                            b1.Navigation("Bezugsform");
 
                             b1.Navigation("Zutaten");
                         });

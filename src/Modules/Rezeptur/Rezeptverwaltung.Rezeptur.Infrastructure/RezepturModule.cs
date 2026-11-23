@@ -41,7 +41,10 @@ public static class RezepturModule
         var scope = services.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var datenbank = scope.ServiceProvider.GetRequiredService<RezepturDbContext>();
+            // Beim Start gibt es keine angemeldete Person; Migrationen brauchen keinen Betrieb.
+            var optionen = scope.ServiceProvider.GetRequiredService<DbContextOptions<RezepturDbContext>>();
+            var datenbank = new RezepturDbContext(optionen, OhneAnmeldung.Instanz);
+            await using var _ = datenbank.ConfigureAwait(false);
             await datenbank.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
         }
     }

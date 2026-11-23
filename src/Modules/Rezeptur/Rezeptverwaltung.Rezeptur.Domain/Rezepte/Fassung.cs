@@ -8,6 +8,9 @@ namespace Rezeptverwaltung.Rezeptur.Domain.Rezepte;
 /// </summary>
 public sealed class Fassung
 {
+    /// <summary>Obergrenze je Fassung (Issue #6): schützt die öffentliche API vor übergroßen Anfragen.</summary>
+    public const int MaximaleZutatenzeilen = 100;
+
     private readonly List<Zutatenzeile> _zutaten = [];
 
     private Fassung(int nummer, FassungsStatus status, DateTimeOffset erstelltAm, DateTimeOffset? freigegebenAm)
@@ -82,6 +85,10 @@ public sealed class Fassung
     private void ZutatenSetzen(IEnumerable<Zutatenzeile> zutaten)
     {
         var neu = zutaten.ToList(); // wirft ArgumentNullException bei null
+        DomainRuleViolationException.Wenn(
+            neu.Count > MaximaleZutatenzeilen,
+            "fassung.zu_viele_zutaten",
+            $"Eine Fassung hat höchstens {MaximaleZutatenzeilen} Zutatenzeilen.");
         foreach (var zeile in neu)
         {
             ArgumentNullException.ThrowIfNull(zeile);
@@ -96,6 +103,10 @@ public sealed class Fassung
     internal void ZutatHinzufuegen(Zutatenzeile zeile)
     {
         ArgumentNullException.ThrowIfNull(zeile);
+        DomainRuleViolationException.ZustandWenn(
+            _zutaten.Count >= MaximaleZutatenzeilen,
+            "fassung.zu_viele_zutaten",
+            $"Eine Fassung hat höchstens {MaximaleZutatenzeilen} Zutatenzeilen.");
         _zutaten.Add(zeile);
     }
 

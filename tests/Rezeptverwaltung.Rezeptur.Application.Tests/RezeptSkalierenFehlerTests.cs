@@ -10,11 +10,11 @@ public sealed class RezeptSkalierenFehlerTests
     private readonly CancellationToken _ct = TestContext.Current.CancellationToken;
 
     private async Task<Guid> LeeresRezeptAnlegenAsync() =>
-        (await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(new RezeptAnlegen("Noch leer", []), _ct)).Id;
+        (await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(new RezeptAnlegen("Noch leer", []), _ct)).Id;
 
     private Task<DomainRuleViolationException> SkalierenSchlaegtFehlAsync(Guid id, decimal ziel) =>
         Should.ThrowAsync<DomainRuleViolationException>(
-            () => new RezeptSkalierenHandler(_repository).HandleAsync(new RezeptSkalieren(id, ziel), _ct));
+            () => new RezeptSkalierenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new RezeptSkalieren(id, ziel), _ct));
 
     [Fact]
     public async Task RezeptAnlegen_ohne_Zutaten_ist_erlaubt()

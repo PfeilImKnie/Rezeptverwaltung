@@ -28,7 +28,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     [Fact]
     public async Task Rezept_wird_vollstaendig_gespeichert_und_geladen()
     {
-        var rezept = Rezept.Anlegen(
+        var rezept = Rezept.Anlegen(Testbetrieb.A,
             RezeptName.Von("Sachertorte"),
             [
                 Zutatenzeile.Von("Butter", Gewicht.Erfasst(140)),
@@ -57,7 +57,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
             Zutatenzeile.Von("Mehl", Gewicht.Erfasst(100)),
         };
 
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Biskuit"), zeilen, Testzeit.Jetzt));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Biskuit"), zeilen, Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldBe(zeilen);
     }
@@ -65,7 +65,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     [Fact]
     public async Task Rezept_ohne_Zutaten_hat_nach_dem_Laden_eine_leere_Liste()
     {
-        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(RezeptName.Von("Noch leer"), [], Testzeit.Jetzt));
+        var geladen = await SpeichernUndNeuLadenAsync(Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Noch leer"), [], Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldBeEmpty();
     }
@@ -80,7 +80,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
         var menge = Gewicht.Erfasst(decimal.Parse(gramm, System.Globalization.CultureInfo.InvariantCulture));
 
         var geladen = await SpeichernUndNeuLadenAsync(
-            Rezept.Anlegen(RezeptName.Von("Genauigkeit"), [Zutatenzeile.Von("Safran", menge)], Testzeit.Jetzt));
+            Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Genauigkeit"), [Zutatenzeile.Von("Safran", menge)], Testzeit.Jetzt));
 
         geladen.Zutaten.ShouldHaveSingleItem().Menge.ShouldBe(menge);
     }
@@ -89,7 +89,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     public async Task Unicode_in_Namen_und_Bezeichnungen_bleibt_erhalten()
     {
         var torte = char.ConvertFromUtf32(0x1F382);
-        var rezept = Rezept.Anlegen(
+        var rezept = Rezept.Anlegen(Testbetrieb.A,
             RezeptName.Von($"Crème brûlée {torte} – „Spezial“"),
             [Zutatenzeile.Von($"Bourbon-Vanille (Ø 2 mm) {torte}", Gewicht.Erfasst(2.5m))], Testzeit.Jetzt);
 
@@ -110,7 +110,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     [Fact]
     public async Task Dieselbe_Id_kann_nicht_zweimal_gespeichert_werden()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Einmalig"), [], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Einmalig"), [], Testzeit.Jetzt);
         await SpeichernUndNeuLadenAsync(rezept);
 
         await using var kontext = postgres.NeuerKontext();
@@ -121,7 +121,7 @@ public sealed class EfRezeptRepositoryTests(PostgresFixture postgres) : IClassFi
     public async Task Fassungen_und_Zutaten_liegen_als_JSON_Arrays_mit_stabilen_Feldnamen_in_der_Datenbank()
     {
         // Das Speicherformat ist ein Vertrag mit künftigen Migrationen: Feldnamen nicht stillschweigend ändern (ADR 0011, 0013).
-        var rezept = Rezept.Anlegen(RezeptName.Von("Format"), [Zutatenzeile.Von("Mehl", Gewicht.Erfasst(100.25m))], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Format"), [Zutatenzeile.Von("Mehl", Gewicht.Erfasst(100.25m))], Testzeit.Jetzt);
         await SpeichernUndNeuLadenAsync(rezept);
 
         await using var kontext = postgres.NeuerKontext();

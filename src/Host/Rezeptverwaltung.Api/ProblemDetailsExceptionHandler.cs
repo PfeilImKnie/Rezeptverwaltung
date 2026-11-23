@@ -31,6 +31,14 @@ internal sealed class ProblemDetailsExceptionHandler(IProblemDetailsService prob
                 Type = $"https://rezeptverwaltung/probleme/{verletzung.Code}",
                 Extensions = { ["code"] = verletzung.Code },
             },
+            ZugriffVerweigertException verweigert => new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = StatusCodes.Status403Forbidden,
+                Title = "Keine Berechtigung",
+                Detail = verweigert.Message,
+                Type = $"https://rezeptverwaltung/probleme/{verweigert.Code}",
+                Extensions = { ["code"] = verweigert.Code },
+            },
             VorbedingungException vorbedingung => new Microsoft.AspNetCore.Mvc.ProblemDetails
             {
                 Status = vorbedingung.Fehlt ? StatusCodes.Status428PreconditionRequired : StatusCodes.Status412PreconditionFailed,

@@ -67,6 +67,12 @@ jobs:
     name: API-Vertrag (Schemathesis)
     runs-on: ubuntu-latest
     services:
+      # Test-Aussteller für Tokens (ADR 0015); dieselbe Token-Form wie Zitadel.
+      login:
+        image: ghcr.io/navikt/mock-oauth2-server:6.1.4
+        env:
+          JSON_CONFIG: '{"interactiveLogin":false,"tokenCallbacks":[{"issuerId":"rezeptverwaltung","tokenExpiry":3600,"requestMappings":[{"requestParam":"scope","match":"inhaber-ci","claims":{"sub":"schemathesis","aud":["rezeptverwaltung-api"],"urn:zitadel:iam:org:project:roles":{"inhaber":{"betrieb-ci":"ci.test"}}}}]}]}'
+        ports: ['8080:8080']
       postgres:
         image: docker.io/library/postgres:18-alpine
         env:
@@ -79,6 +85,9 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       ConnectionStrings__rezeptverwaltung: Host=127.0.0.1;Port=5432;Database=rezeptverwaltung;Username=rezeptverwaltung;Password=nur-fuer-ci
+      Authentifizierung__Authority: http://localhost:8080/rezeptverwaltung
+      Authentifizierung__Audience: rezeptverwaltung-api
+      Authentifizierung__RequireHttpsMetadata: 'false'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
@@ -97,8 +106,20 @@ jobs:
           done
           cat api.log
           exit 1
+      - name: Token holen
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/rezeptverwaltung/.well-known/openid-configuration > /dev/null && break
+            sleep 2
+          done
+          TOKEN=$(curl -fsS -X POST http://localhost:8080/rezeptverwaltung/token \
+            -d grant_type=client_credentials -d client_id=ci -d client_secret=ci -d scope=inhaber-ci \
+            | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          echo "TOKEN=$TOKEN" >> "$GITHUB_ENV"
       - name: Schemathesis gegen api/openapi.yaml
-        run: st run api/openapi.yaml --url http://127.0.0.1:5080 --checks all
+        run: |
+          st run api/openapi.yaml --url http://127.0.0.1:5080 --checks all -H "Authorization: Bearer $TOKEN"
       - name: API-Log
         if: failure()
         run: cat api.log

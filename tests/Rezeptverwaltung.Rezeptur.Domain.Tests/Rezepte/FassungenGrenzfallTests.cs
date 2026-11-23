@@ -18,7 +18,7 @@ public sealed class FassungenGrenzfallTests
 
     private static Rezept Sachermasse()
     {
-        var rezept = Rezept.Anlegen(
+        var rezept = Rezept.Anlegen(Testbetrieb.A,
             RezeptName.Von("Sachermasse"),
             [Zeile("Butter", 140), Zeile("Zucker", 70), Zeile("Eier", 280), Zeile("Zucker", 70), Zeile("Mehl", 140)],
             T1);
@@ -54,7 +54,7 @@ public sealed class FassungenGrenzfallTests
     [Fact]
     public void Erstellungszeitpunkt_bleibt_bei_Bearbeitung_und_Freigabe_erhalten()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Linzer Teig"), [Zeile("Mehl", 300)], T1);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Linzer Teig"), [Zeile("Mehl", 300)], T1);
 
         rezept.EntwurfBearbeiten([Zeile("Mehl", 280), Zeile("Butter", 200)]);
         var fassung = rezept.EntwurfFreigeben(T2);
@@ -98,7 +98,7 @@ public sealed class FassungenGrenzfallTests
     [Fact]
     public void Entwurf_mit_einer_einzigen_Zutat_von_0_01_g_kann_freigegeben_werden()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Prise"), [Zeile("Salz", 0.01m)], T1);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Prise"), [Zeile("Salz", 0.01m)], T1);
 
         rezept.EntwurfFreigeben(T2).Status.ShouldBe(FassungsStatus.Freigegeben);
     }
@@ -148,7 +148,7 @@ public sealed class FassungenGrenzfallTests
     {
         Gen.Select(Generatoren.Zutatenzeile.List[1, 20], Generatoren.Zutatenzeile.List[1, 20]).Sample((erste, zweite) =>
         {
-            var rezept = Rezept.Anlegen(RezeptName.Von("Probe"), erste, T1);
+            var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Probe"), erste, T1);
             rezept.EntwurfFreigeben(T1);
             rezept.EntwurfAnlegen(T2).Zutaten.ShouldBe(erste);
             rezept.EntwurfBearbeiten(zweite);

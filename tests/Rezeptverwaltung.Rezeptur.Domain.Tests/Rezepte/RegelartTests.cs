@@ -10,7 +10,7 @@ namespace Rezeptverwaltung.Rezeptur.Domain.Tests.Rezepte;
 /// </summary>
 public sealed class RegelartTests
 {
-    private static Rezept Leer() => Rezept.Anlegen(RezeptName.Von("Noch leer"), [], Testzeit.Jetzt);
+    private static Rezept Leer() => Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Noch leer"), [], Testzeit.Jetzt);
 
     [Fact]
     public void Ungueltiges_Zielgewicht_hat_Vorrang_vor_fehlenden_Zutaten()
