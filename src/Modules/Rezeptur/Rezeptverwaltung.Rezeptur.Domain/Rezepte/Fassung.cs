@@ -26,16 +26,19 @@ public sealed class Fassung
 
     public DateTimeOffset? FreigegebenAm { get; private set; }
 
+    /// <summary>Form, für die diese Fassung geschrieben ist; <c>null</c> bei Rezepten ohne Form (z. B. Cremes).</summary>
+    public Bezugsform? Bezugsform { get; private set; }
+
     public bool IstEntwurf => Status == FassungsStatus.Entwurf;
 
     public IReadOnlyList<Zutatenzeile> Zutaten => _zutaten.AsReadOnly();
 
     public Gewicht Gesamtgewicht => _zutaten.Aggregate(Gewicht.Null, (summe, zeile) => summe + zeile.Menge);
 
-    internal static Fassung NeuerEntwurf(int nummer, IEnumerable<Zutatenzeile> zutaten, DateTimeOffset erstelltAm)
+    internal static Fassung NeuerEntwurf(int nummer, IEnumerable<Zutatenzeile> zutaten, Bezugsform? bezugsform, DateTimeOffset erstelltAm)
     {
         var fassung = new Fassung(nummer, FassungsStatus.Entwurf, erstelltAm, freigegebenAm: null);
-        fassung.ZutatenSetzen(zutaten);
+        fassung.InhaltSetzen(zutaten, bezugsform);
         return fassung;
     }
 
@@ -52,7 +55,31 @@ public sealed class Fassung
         return Skaliert(Skalierungsfaktor.Zwischen(Gesamtgewicht, zielgewicht));
     }
 
-    internal void ZutatenSetzen(IEnumerable<Zutatenzeile> zutaten)
+    /// <summary>
+    /// Rechnet alle Mengen auf eine andere Form um (über das Volumen). Die Fassung selbst bleibt unverändert.
+    /// </summary>
+    public Umrechnung UmgerechnetAuf(Bezugsform zielform)
+    {
+        ArgumentNullException.ThrowIfNull(zielform);
+        DomainRuleViolationException.ZustandWenn(
+            Bezugsform is null,
+            "fassung.ohne_bezugsform",
+            "Diese Fassung hat keine Bezugsform und kann nicht auf eine Form umgerechnet werden.");
+        DomainRuleViolationException.ZustandWenn(_zutaten.Count == 0, "rezept.ohne_zutaten", "Ein Rezept ohne Zutaten kann nicht skaliert werden.");
+
+        var faktor = Bezugsform!.FaktorFuer(zielform);
+        return new Umrechnung(faktor, Skaliert(faktor));
+    }
+
+    internal void InhaltSetzen(IEnumerable<Zutatenzeile> zutaten, Bezugsform? bezugsform)
+    {
+        ZutatenSetzen(zutaten);
+
+        // Eigene Instanz je Fassung, aus demselben Grund wie bei den Zutatenzeilen (siehe ZutatenSetzen).
+        Bezugsform = bezugsform is null ? null : bezugsform with { };
+    }
+
+    private void ZutatenSetzen(IEnumerable<Zutatenzeile> zutaten)
     {
         var neu = zutaten.ToList(); // wirft ArgumentNullException bei null
         foreach (var zeile in neu)
@@ -78,3 +105,6 @@ public sealed class Fassung
         FreigegebenAm = zeitpunkt;
     }
 }
+
+/// <summary>Ergebnis einer Umrechnung auf eine andere Form.</summary>
+public sealed record Umrechnung(Skalierungsfaktor Faktor, IReadOnlyList<Zutatenzeile> Zutaten);

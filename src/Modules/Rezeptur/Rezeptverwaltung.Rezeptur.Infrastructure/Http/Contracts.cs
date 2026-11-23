@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http;
 using Rezeptverwaltung.Rezeptur.Application.Rezepte;
 using Rezeptverwaltung.Rezeptur.Domain.Rezepte;
 
@@ -5,9 +7,36 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Http;
 
 // API-Verträge sind bewusst von den Application-Modellen getrennt, damit sich beide unabhängig entwickeln können.
 
-internal sealed record RezeptAnlegenRequest(string Name, IReadOnlyList<ZutatRequest> Zutaten);
+internal sealed record RezeptAnlegenRequest(string Name, IReadOnlyList<ZutatRequest> Zutaten, FormRequest? Bezugsform = null);
 
-internal sealed record EntwurfBearbeitenRequest(IReadOnlyList<ZutatRequest> Zutaten);
+internal sealed record EntwurfBearbeitenRequest(IReadOnlyList<ZutatRequest> Zutaten, FormRequest? Bezugsform = null);
+
+/// <summary>Bezugsform im Vertrag: <c>art</c> = <c>ring</c> | <c>blech</c>; Maße, die zur Art nicht passen, werden ignoriert.</summary>
+internal sealed record FormRequest(string Art, decimal HoeheCm, decimal? DurchmesserCm = null, decimal? LaengeCm = null, decimal? BreiteCm = null)
+{
+    /// <summary>Unbekannte Art oder fehlende Pflichtmaße sind Formatfehler (400), Wertebereiche prüft die Domain (422).</summary>
+    public Form AlsForm() => Art switch
+    {
+        "ring" => Form.Ring(Pflicht(DurchmesserCm, "durchmesserCm"), HoeheCm),
+        "blech" => Form.Blech(Pflicht(LaengeCm, "laengeCm"), Pflicht(BreiteCm, "breiteCm"), HoeheCm),
+        _ => throw new BadHttpRequestException("Unbekannte Formart. Erlaubt: ring, blech.", StatusCodes.Status400BadRequest),
+    };
+
+    private static decimal Pflicht(decimal? wert, string feld) =>
+        wert ?? throw new BadHttpRequestException($"Für diese Formart fehlt '{feld}'.", StatusCodes.Status400BadRequest);
+}
+
+internal sealed record FormResponse(
+    string Art,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? DurchmesserCm,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? LaengeCm,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? BreiteCm,
+    decimal HoeheCm)
+{
+    public static FormResponse? Aus(Form? form) => form is null
+        ? null
+        : new(form.Art == Domain.Rezepte.Formart.Ring ? "ring" : "blech", form.DurchmesserCm, form.LaengeCm, form.BreiteCm, form.HoeheCm);
+}
 
 internal sealed record ZutatRequest(string Bezeichnung, decimal Gramm)
 {
@@ -31,6 +60,7 @@ internal sealed record RezeptDetailsResponse(
     string Name,
     IReadOnlyList<ZutatResponse> Zutaten,
     decimal GesamtgewichtGramm,
+    FormResponse? Bezugsform,
     int MassgeblicheFassung,
     int? AktuelleFassung,
     int? Entwurf,
@@ -41,6 +71,7 @@ internal sealed record RezeptDetailsResponse(
         details.Name,
         details.Zutaten.Select(ZutatResponse.Aus).ToList(),
         details.GesamtgewichtGramm,
+        FormResponse.Aus(details.Bezugsform),
         details.MassgeblicheFassung,
         details.AktuelleFassung,
         details.Entwurf,
@@ -53,6 +84,7 @@ internal sealed record FassungDetailsResponse(
     string Status,
     DateTimeOffset ErstelltAm,
     DateTimeOffset? FreigegebenAm,
+    FormResponse? Bezugsform,
     IReadOnlyList<ZutatResponse> Zutaten,
     decimal GesamtgewichtGramm)
 {
@@ -62,16 +94,26 @@ internal sealed record FassungDetailsResponse(
         StatusText.Von(fassung.Status),
         fassung.ErstelltAm,
         fassung.FreigegebenAm,
+        FormResponse.Aus(fassung.Bezugsform),
         fassung.Zutaten.Select(ZutatResponse.Aus).ToList(),
         fassung.GesamtgewichtGramm);
 }
 
-internal sealed record SkaliertesRezeptResponse(Guid RezeptId, string Name, int Fassung, decimal ZielgewichtGramm, IReadOnlyList<ZutatResponse> Zutaten)
+internal sealed record SkaliertesRezeptResponse(
+    Guid RezeptId,
+    string Name,
+    int Fassung,
+    decimal Faktor,
+    FormResponse? Zielform,
+    decimal ZielgewichtGramm,
+    IReadOnlyList<ZutatResponse> Zutaten)
 {
     public static SkaliertesRezeptResponse Aus(SkaliertesRezept rezept) => new(
         rezept.RezeptId,
         rezept.Name,
         rezept.Fassung,
+        rezept.Faktor,
+        FormResponse.Aus(rezept.Zielform),
         rezept.ZielgewichtGramm,
         rezept.Zutaten.Select(ZutatResponse.Aus).ToList());
 }

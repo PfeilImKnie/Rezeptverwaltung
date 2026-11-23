@@ -33,6 +33,20 @@ internal static class RezepturEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        rezepte.MapGet("/{id:guid}/skaliert/ring", RezeptAufRingSkalierenAsync)
+            .WithName("rezeptAufRingSkalieren")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        rezepte.MapGet("/{id:guid}/skaliert/blech", RezeptAufBlechSkalierenAsync)
+            .WithName("rezeptAufBlechSkalieren")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
         rezepte.MapGet("/{id:guid}/fassungen/{nummer:int:min(1)}", FassungAbfragenAsync)
             .WithName("fassungAbfragen")
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -64,7 +78,7 @@ internal static class RezepturEndpoints
         CancellationToken cancellationToken)
     {
         KeineLeerenEintraege(request.Zutaten);
-        var befehl = new RezeptAnlegen(request.Name, ZutatRequest.AlsEingaben(request.Zutaten));
+        var befehl = new RezeptAnlegen(request.Name, ZutatRequest.AlsEingaben(request.Zutaten), request.Bezugsform?.AlsForm());
 
         var details = await handler.HandleAsync(befehl, cancellationToken).ConfigureAwait(false);
         antwort.Headers.ETag = Etag.Aus(details.Stand);
@@ -94,14 +108,49 @@ internal static class RezepturEndpoints
         RezeptSkalierenHandler handler,
         CancellationToken cancellationToken)
     {
-        if (fassung < 1)
-        {
-            // Vertrag: minimum 1. Eine Nummer kleiner 1 ist eine ungültige Anfrage, kein „nicht gefunden“.
-            throw new BadHttpRequestException("Die Fassungsnummer muss mindestens 1 sein.", StatusCodes.Status400BadRequest);
-        }
-
+        FassungsnummerPruefen(fassung);
         var ergebnis = await handler.HandleAsync(new RezeptSkalieren(id, zielgewichtGramm.Wert, fassung), cancellationToken).ConfigureAwait(false);
         return ergebnis is null ? TypedResults.NotFound() : TypedResults.Ok(SkaliertesRezeptResponse.Aus(ergebnis));
+    }
+
+    private static Task<Results<Ok<SkaliertesRezeptResponse>, NotFound>> RezeptAufRingSkalierenAsync(
+        Guid id,
+        Zentimeter durchmesserCm,
+        Zentimeter hoeheCm,
+        int? fassung,
+        RezeptAufFormSkalierenHandler handler,
+        CancellationToken cancellationToken) =>
+        AufFormSkalierenAsync(id, Form.Ring(durchmesserCm.Wert, hoeheCm.Wert), fassung, handler, cancellationToken);
+
+    private static Task<Results<Ok<SkaliertesRezeptResponse>, NotFound>> RezeptAufBlechSkalierenAsync(
+        Guid id,
+        Zentimeter laengeCm,
+        Zentimeter breiteCm,
+        Zentimeter hoeheCm,
+        int? fassung,
+        RezeptAufFormSkalierenHandler handler,
+        CancellationToken cancellationToken) =>
+        AufFormSkalierenAsync(id, Form.Blech(laengeCm.Wert, breiteCm.Wert, hoeheCm.Wert), fassung, handler, cancellationToken);
+
+    private static async Task<Results<Ok<SkaliertesRezeptResponse>, NotFound>> AufFormSkalierenAsync(
+        Guid id,
+        Form zielform,
+        int? fassung,
+        RezeptAufFormSkalierenHandler handler,
+        CancellationToken cancellationToken)
+    {
+        FassungsnummerPruefen(fassung);
+        var ergebnis = await handler.HandleAsync(new RezeptAufFormSkalieren(id, zielform, fassung), cancellationToken).ConfigureAwait(false);
+        return ergebnis is null ? TypedResults.NotFound() : TypedResults.Ok(SkaliertesRezeptResponse.Aus(ergebnis));
+    }
+
+    /// <summary>Vertrag: minimum 1. Eine Nummer kleiner 1 ist eine ungültige Anfrage, kein „nicht gefunden“.</summary>
+    private static void FassungsnummerPruefen(int? fassung)
+    {
+        if (fassung < 1)
+        {
+            throw new BadHttpRequestException("Die Fassungsnummer muss mindestens 1 sein.", StatusCodes.Status400BadRequest);
+        }
     }
 
     private static async Task<Results<Ok<FassungDetailsResponse>, NotFound>> FassungAbfragenAsync(
@@ -141,7 +190,7 @@ internal static class RezepturEndpoints
         CancellationToken cancellationToken)
     {
         KeineLeerenEintraege(request.Zutaten);
-        var befehl = new EntwurfBearbeiten(id, ZutatRequest.AlsEingaben(request.Zutaten), Etag.StandAusIfMatch(ifMatch));
+        var befehl = new EntwurfBearbeiten(id, ZutatRequest.AlsEingaben(request.Zutaten), Etag.StandAusIfMatch(ifMatch), request.Bezugsform?.AlsForm());
         return Mit(antwort, await handler.HandleAsync(befehl, cancellationToken).ConfigureAwait(false));
     }
 

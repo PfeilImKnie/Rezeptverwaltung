@@ -19,6 +19,8 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 | **Skalieren** | Alle Mengen mit demselben Faktor umrechnen. Das Rezept selbst bleibt unverändert. | `Rezept.Skaliert`, `Rezept.SkaliertAuf` |
 | **Skalierungsfaktor** | Faktor > 0, mit dem alle Mengen multipliziert werden. | `Skalierungsfaktor` |
 | **Zielgewicht** | Gewünschtes Gesamtgewicht nach dem Skalieren. | `zielgewichtGramm` |
+| **Bezugsform** | Form, für die eine Fassung geschrieben ist: **Ring** (Durchmesser, Höhe) oder **Blech/Rahmen** (Länge, Breite, Höhe), Maße in cm auf 0,1 cm genau (1–200 cm, Höhe 0,1–50 cm). Rezepte ohne Form (z. B. Cremes) sind erlaubt. Eine andere Form ist eine neue Fassung. | `Bezugsform` |
+| **Umrechnen auf eine Form** | Skalieren über das Volumen: Faktor = Volumen der Zielform / Volumen der Bezugsform. Die Höhe zählt. Ring ↔ Blech ist möglich. | `Fassung.UmgerechnetAuf` |
 | **Ungültige Eingabe** | Eine Angabe verletzt eine Fachregel (z. B. Gewicht genauer als 0,01 g). Die Eingabe muss korrigiert werden. HTTP 422. | `Regelart.UngueltigeEingabe` |
 | **Zustandskonflikt** | Die Angabe ist gültig, aber das Rezept ist (noch) nicht in einem passenden Zustand (z. B. ohne Zutaten skalieren). Erst das Rezept vervollständigen. HTTP 409. | `Regelart.Zustandskonflikt` |
 
@@ -27,9 +29,8 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 | Begriff | Bedeutung |
 |---|---|
 | **Grundrezept / Komponente** | Ein Rezept, das als Baustein in anderen Rezepten verwendet wird (Mürbeteig, Ganache …), immer in einer **festen Fassung**. Umstellen auf eine neuere Fassung ist eine bewusste Änderung. Weitere geeignete Varianten sind nur eine Notiz am Endprodukt. |
-| **Anteil** | Menge einer Komponente mit anderer Bezugsform, z. B. „¼ Blech“ Biskuit für eine Torte im Ring Ø 26. |
+| **Anteil** | Menge einer Komponente mit anderer Bezugsform, z. B. „¼ Blech“ Biskuit für eine Torte im Ring Ø 26. Komponenten ohne Form (Cremes) werden in Gramm angegeben. |
 | **Zubereitung** | Protokoll, wann ein Rezept in welcher Fassung und Größe zubereitet wurde, mit den Fassungen aller Komponenten. Wird nie nachträglich verändert. |
 | **Ausbeute / Backverlust** | Verhältnis von Fertiggewicht zu Teigeinlage. |
-| **Formskalierung** | Skalieren nach Backform (Ring Ø, Rahmen L×B) über die Fläche. |
 | **Arbeitssitzung** | Laufende Zubereitung eines Rezepts (aktueller Schritt). Grundlage für die Bedienung per Sprache (Alexa). |
 | **Allergene** | Die 14 Hauptallergene nach LMIV, aus den Zutaten über alle Komponenten abgeleitet. |

@@ -17,3 +17,4 @@ Neue ADRs entstehen mit dem Skill `/adr` aus der [Vorlage](0000-vorlage.md). Reg
 | [0011](0011-abbildung-der-aggregate-in-postgresql.md) | Abbildung der Aggregate in PostgreSQL (JSONB-Listen, Migration beim Start, kein U+0000) | Akzeptiert |
 | [0012](0012-lokale-entwicklung-mit-aspire-und-podman-oder-docker.md) | Lokale Entwicklung mit Aspire; Container mit Podman oder Docker | Akzeptiert |
 | [0013](0013-rezeptfassungen-mit-entwurf-freigabe-und-stand.md) | Rezeptfassungen mit Entwurf und Freigabe; ETag/If-Match gegen verlorene Änderungen | Akzeptiert |
+| [0014](0014-bezugsform-und-umrechnen-ueber-das-volumen.md) | Bezugsform pro Fassung; Umrechnen auf andere Formen über das Volumen | Akzeptiert |

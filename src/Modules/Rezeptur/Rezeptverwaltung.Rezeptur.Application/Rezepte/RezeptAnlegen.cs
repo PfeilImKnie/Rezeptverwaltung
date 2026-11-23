@@ -3,7 +3,7 @@ using Rezeptverwaltung.Rezeptur.Domain.Rezepte;
 
 namespace Rezeptverwaltung.Rezeptur.Application.Rezepte;
 
-public sealed record RezeptAnlegen(string Name, IReadOnlyList<ZutatEingabe> Zutaten);
+public sealed record RezeptAnlegen(string Name, IReadOnlyList<ZutatEingabe> Zutaten, Form? Bezugsform = null);
 
 public sealed record ZutatEingabe(string Bezeichnung, decimal Gramm)
 {
@@ -20,7 +20,8 @@ public sealed class RezeptAnlegenHandler(IRezeptRepository repository, TimeProvi
         var rezept = Rezept.Anlegen(
             RezeptName.Von(befehl.Name),
             ZutatEingabe.AlsZutatenzeilen(befehl.Zutaten),
-            zeit.GetUtcNow());
+            zeit.GetUtcNow(),
+            befehl.Bezugsform?.AlsBezugsform());
 
         await repository.HinzufuegenAsync(rezept, cancellationToken).ConfigureAwait(false);
         return RezeptDetails.Aus(rezept, repository.StandVon(rezept));
