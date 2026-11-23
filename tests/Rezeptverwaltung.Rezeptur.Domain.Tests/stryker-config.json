@@ -1,0 +1,11 @@
+{
+  "stryker-config": {
+    "project": "Rezeptverwaltung.Rezeptur.Domain.csproj",
+    "test-projects": ["Rezeptverwaltung.Rezeptur.Domain.Tests.csproj"],
+    "reporters": ["progress", "html", "markdown"],
+    "thresholds": { "high": 90, "low": 80, "break": 80 },
+    "mutation-level": "Standard",
+    "test-runner": "mtp",
+    "ignore-methods": ["ToString"]
+  }
+}

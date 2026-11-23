@@ -1,0 +1,220 @@
+openapi: 3.1.1
+info:
+  title: Rezeptverwaltung API
+  version: v1
+  description: |
+    API für die Rezeptverwaltung einer Konditorei.
+
+    **Vertrag zuerst:** Diese Datei ist die Quelle der Wahrheit. Jede API-Änderung beginnt hier
+    (siehe ADR 0003). Der Contract-Test `OpenApiVertragTests` prüft, dass die Implementierung
+    exakt diese Pfade, Methoden und Statuscodes anbietet; Schemathesis prüft in der CI die Schemas.
+
+    Fachliche Fehler werden als RFC 9457 Problem Details mit Status 422 und einem stabilen
+    `code` geliefert (z. B. `gewicht.zu_genau`).
+servers:
+  - url: /
+tags:
+  - name: Rezepte
+paths:
+  /api/v1/rezepte:
+    post:
+      tags: [Rezepte]
+      operationId: rezeptAnlegen
+      summary: Legt ein neues Rezept an.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RezeptAnlegenRequest'
+      responses:
+        '201':
+          description: Rezept angelegt.
+          headers:
+            Location:
+              description: URL des neuen Rezepts.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RezeptDetails'
+        '400':
+          $ref: '#/components/responses/UngueltigeAnfrage'
+        '422':
+          $ref: '#/components/responses/FachlicheRegelVerletzt'
+
+  /api/v1/rezepte/{id}:
+    get:
+      tags: [Rezepte]
+      operationId: rezeptAbfragen
+      summary: Liefert ein Rezept.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+      responses:
+        '200':
+          description: Das Rezept.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RezeptDetails'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+
+  /api/v1/rezepte/{id}/skaliert:
+    get:
+      tags: [Rezepte]
+      operationId: rezeptSkalieren
+      summary: Rechnet alle Zutatenmengen auf ein Zielgewicht um.
+      description: |
+        Das Rezept selbst bleibt unverändert. Mengen werden auf 0,01 g gerundet ausgegeben;
+        die Summe kann daher minimal vom Zielgewicht abweichen.
+      parameters:
+        - $ref: '#/components/parameters/RezeptId'
+        - name: zielgewichtGramm
+          in: query
+          required: true
+          description: Gewünschtes Gesamtgewicht aller Zutaten in Gramm, auf 0,01 g genau.
+          schema:
+            $ref: '#/components/schemas/ErfasstesGewicht'
+      responses:
+        '200':
+          description: Das skalierte Rezept.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkaliertesRezept'
+        '400':
+          $ref: '#/components/responses/UngueltigeAnfrage'
+        '404':
+          $ref: '#/components/responses/NichtGefunden'
+        '422':
+          $ref: '#/components/responses/FachlicheRegelVerletzt'
+
+components:
+  parameters:
+    RezeptId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Bezeichnung:
+      type: string
+      minLength: 1
+      maxLength: 200
+      pattern: '\S'
+      description: Mindestens ein sichtbares Zeichen; führende und folgende Leerzeichen werden entfernt.
+
+    ErfasstesGewicht:
+      type: number
+      minimum: 0.01
+      maximum: 1000000000
+      multipleOf: 0.01
+      description: Gewicht in Gramm, auf 0,01 g genau.
+
+    RezeptAnlegenRequest:
+      type: object
+      required: [name, zutaten]
+      properties:
+        name:
+          $ref: '#/components/schemas/Bezeichnung'
+        zutaten:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZutatEingabe'
+
+    ZutatEingabe:
+      type: object
+      required: [bezeichnung, gramm]
+      properties:
+        bezeichnung:
+          $ref: '#/components/schemas/Bezeichnung'
+        gramm:
+          $ref: '#/components/schemas/ErfasstesGewicht'
+
+    Zutat:
+      type: object
+      required: [bezeichnung, gramm]
+      properties:
+        bezeichnung:
+          type: string
+        gramm:
+          type: number
+          minimum: 0
+          description: Menge in Gramm, auf 0,01 g gerundet.
+
+    RezeptDetails:
+      type: object
+      required: [id, name, zutaten, gesamtgewichtGramm]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        zutaten:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zutat'
+        gesamtgewichtGramm:
+          type: number
+          minimum: 0
+
+    SkaliertesRezept:
+      type: object
+      required: [rezeptId, name, zielgewichtGramm, zutaten]
+      properties:
+        rezeptId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        zielgewichtGramm:
+          type: number
+        zutaten:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zutat'
+
+    ProblemDetails:
+      type: object
+      description: RFC 9457 Problem Details.
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stabiler, maschinenlesbarer Fehlercode bei fachlichen Fehlern.
+      additionalProperties: true
+
+  responses:
+    UngueltigeAnfrage:
+      description: Anfrage syntaktisch ungültig (fehlende Pflichtfelder, falsche Typen).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NichtGefunden:
+      description: Ressource existiert nicht.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    FachlicheRegelVerletzt:
+      description: Anfrage verletzt eine fachliche Regel.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'

@@ -1,0 +1,5 @@
+# Regeln für Testprojekte: sprechende Testnamen mit Unterstrichen sind erwünscht.
+[*.cs]
+dotnet_diagnostic.CA1707.severity = none
+# Testklassen müssen für xUnit öffentlich sein.
+dotnet_diagnostic.CA1515.severity = none

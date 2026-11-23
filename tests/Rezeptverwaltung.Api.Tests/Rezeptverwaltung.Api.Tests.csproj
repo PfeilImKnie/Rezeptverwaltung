@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Host\Rezeptverwaltung.Api\Rezeptverwaltung.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\api\openapi.yaml" Link="openapi.yaml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

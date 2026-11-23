@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\SharedKernel\Rezeptverwaltung.SharedKernel\Rezeptverwaltung.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

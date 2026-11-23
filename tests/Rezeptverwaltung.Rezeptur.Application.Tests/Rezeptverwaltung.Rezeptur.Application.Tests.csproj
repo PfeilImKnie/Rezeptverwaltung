@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Rezeptur\Rezeptverwaltung.Rezeptur.Application\Rezeptverwaltung.Rezeptur.Application.csproj" />
+  </ItemGroup>
+</Project>

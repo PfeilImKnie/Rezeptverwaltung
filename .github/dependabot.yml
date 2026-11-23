@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      tests:
+        patterns: ["xunit*", "Shouldly", "CsCheck", "TngTech.*", "Microsoft.Testing.*", "YamlDotNet"]
+      aspnetcore:
+        patterns: ["Microsoft.AspNetCore.*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test:
+    name: Build, Format, Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore Rezeptverwaltung.slnx
+      # NuGet-Audit: bekannte Schwachstellen brechen bereits das Restore/Build (Directory.Build.props).
+      - run: dotnet format Rezeptverwaltung.slnx --verify-no-changes --no-restore
+      - run: dotnet build Rezeptverwaltung.slnx -c Release --no-restore
+      - run: >
+          dotnet test --solution Rezeptverwaltung.slnx -c Release --no-build
+          --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: tests/**/TestResults/coverage.cobertura.xml
+
+  mutation:
+    name: Mutation Testing (Domain)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore
+      - name: Stryker je Domain-Testprojekt (Schwelle in stryker-config.json)
+        run: |
+          set -e
+          for dir in tests/*.Domain.Tests; do
+            echo "::group::$dir"
+            (cd "$dir" && dotnet stryker)
+            echo "::endgroup::"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stryker-report
+          path: tests/**/StrykerOutput/**/reports/
+
+  api-vertrag:
+    name: API-Vertrag (Schemathesis)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install schemathesis
+      - name: API starten
+        run: |
+          dotnet run --project src/Host/Rezeptverwaltung.Api -c Release --urls http://127.0.0.1:5080 > api.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:5080/health && exit 0
+            sleep 2
+          done
+          cat api.log
+          exit 1
+      - name: Schemathesis gegen api/openapi.yaml
+        run: st run api/openapi.yaml --url http://127.0.0.1:5080 --checks all
+      - name: API-Log
+        if: failure()
+        run: cat api.log
+
+  pr-gate:
+    name: PR-Gate (Test, Review, Doku, DoD)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR-Beschreibung prüfen (ADR 0007)
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          fehler=0
+          pruefe() {
+            if ! printf '%s' "$BODY" | grep -qF -- "$1"; then
+              echo "::error::PR-Beschreibung: $2"
+              fehler=1
+            fi
+          }
+          pruefe "## Anforderung"         "Abschnitt '## Anforderung' fehlt."
+          pruefe "## Unabhängiger Test"   "Abschnitt '## Unabhängiger Test' fehlt (Skill /pr-test)."
+          pruefe "## Code-Review"         "Abschnitt '## Code-Review' fehlt (Skill /pr-review)."
+          pruefe "**Ergebnis: Freigegeben**" "Code-Review ist nicht freigegeben."
+          pruefe "## Dokumentation"       "Abschnitt '## Dokumentation' fehlt (Skill /adr)."
+          if printf '%s' "$BODY" | grep -qE -- '^\s*- \[ \]'; then
+            echo "::error::Definition of Done: offene Checkboxen. Abhaken oder als 'entfällt: <Grund>' markieren."
+            fehler=1
+          fi
+          exit $fehler

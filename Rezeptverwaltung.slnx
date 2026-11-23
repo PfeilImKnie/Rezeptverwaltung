@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/Rezeptverwaltung.Api/Rezeptverwaltung.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Rezeptur/">
+    <Project Path="src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Application/Rezeptverwaltung.Rezeptur.Application.csproj" />
+    <Project Path="src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Domain/Rezeptverwaltung.Rezeptur.Domain.csproj" />
+    <Project Path="src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Infrastructure/Rezeptverwaltung.Rezeptur.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/SharedKernel/">
+    <Project Path="src/SharedKernel/Rezeptverwaltung.SharedKernel/Rezeptverwaltung.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Rezeptverwaltung.Api.Tests/Rezeptverwaltung.Api.Tests.csproj" />
+    <Project Path="tests/Rezeptverwaltung.ArchitectureTests/Rezeptverwaltung.ArchitectureTests.csproj" />
+    <Project Path="tests/Rezeptverwaltung.Rezeptur.Application.Tests/Rezeptverwaltung.Rezeptur.Application.Tests.csproj" />
+    <Project Path="tests/Rezeptverwaltung.Rezeptur.Domain.Tests/Rezeptverwaltung.Rezeptur.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
