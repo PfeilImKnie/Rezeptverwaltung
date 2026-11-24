@@ -10,7 +10,7 @@ public sealed class BezugsformPersistenzTests(PostgresFixture postgres) : IClass
 
     private async Task<Rezept> SpeichernUndLadenAsync(Bezugsform? form)
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Biskuit"), [Zutatenzeile.Von("Eier", Gewicht.Erfasst(300))], Testzeit.Jetzt, form);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Biskuit"), [Zutatenzeile.Von("Eier", Gewicht.Erfasst(300))], Testzeit.Jetzt, form);
         await using (var schreiben = postgres.NeuerKontext())
         {
             await new EfRezeptRepository(schreiben).HinzufuegenAsync(rezept, _ct);

@@ -37,7 +37,8 @@ public sealed class DatenmigrationTests(PostgresFixture postgres) : IClassFixtur
             await migrieren.Database.MigrateAsync(_ct);
         }
 
-        await using var lesen = postgres.NeuerKontext(verbindung);
+        // Altdaten gehören seit ADR 0015 dem Betrieb „altbestand“.
+        await using var lesen = postgres.NeuerKontext(verbindung, Testbenutzer.InhaberAltbestand);
         var rezept = await new EfRezeptRepository(lesen).LadenAsync(new RezeptId(id), _ct);
 
         rezept.ShouldNotBeNull();
@@ -63,7 +64,8 @@ public sealed class DatenmigrationTests(PostgresFixture postgres) : IClassFixtur
             await alt.Database.MigrateAsync(_ct);
         }
 
-        await using var lesen = postgres.NeuerKontext(verbindung);
+        // Altdaten gehören seit ADR 0015 dem Betrieb „altbestand“.
+        await using var lesen = postgres.NeuerKontext(verbindung, Testbenutzer.InhaberAltbestand);
         var rezept = await new EfRezeptRepository(lesen).LadenAsync(new RezeptId(id), _ct);
 
         var fassung = rezept.ShouldNotBeNull().Fassungen.ShouldHaveSingleItem();
@@ -77,7 +79,7 @@ public sealed class DatenmigrationTests(PostgresFixture postgres) : IClassFixtur
     public async Task Rueckweg_uebernimmt_die_massgebliche_Fassung_nicht_den_Entwurf()
     {
         var verbindung = postgres.NeueDatenbank();
-        var rezept = Rezept.Anlegen(RezeptName.Von("Mürbeteig"), [Zutatenzeile.Von("Mehl", Gewicht.Erfasst(500))], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Mürbeteig"), [Zutatenzeile.Von("Mehl", Gewicht.Erfasst(500))], Testzeit.Jetzt);
         rezept.EntwurfFreigeben(Testzeit.Jetzt);
         rezept.EntwurfAnlegen(Testzeit.Jetzt);
         rezept.EntwurfBearbeiten([Zutatenzeile.Von("Mehl", Gewicht.Erfasst(600))]);

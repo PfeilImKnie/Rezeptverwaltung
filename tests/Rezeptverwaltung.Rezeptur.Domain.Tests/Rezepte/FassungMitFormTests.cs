@@ -7,7 +7,7 @@ public sealed class FassungMitFormTests
 {
     private static Zutatenzeile Zeile(string bezeichnung, decimal gramm) => Zutatenzeile.Von(bezeichnung, Gewicht.Erfasst(gramm));
 
-    private static Rezept Sachermasse(Bezugsform? form) => Rezept.Anlegen(
+    private static Rezept Sachermasse(Bezugsform? form) => Rezept.Anlegen(Testbetrieb.A,
         RezeptName.Von("Sachermasse"),
         [Zeile("Butter", 140), Zeile("Zucker", 140), Zeile("Eier", 280)],
         Testzeit.Jetzt,
@@ -46,7 +46,7 @@ public sealed class FassungMitFormTests
     [Fact]
     public void Ohne_Zutaten_ist_Umrechnen_ein_Zustandskonflikt() =>
         Should.Throw<DomainRuleViolationException>(
-                () => Rezept.Anlegen(RezeptName.Von("Leer"), [], Testzeit.Jetzt, Bezugsform.Ring(26, 6)).MassgeblicheFassung.UmgerechnetAuf(Bezugsform.Ring(18, 6)))
+                () => Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Leer"), [], Testzeit.Jetzt, Bezugsform.Ring(26, 6)).MassgeblicheFassung.UmgerechnetAuf(Bezugsform.Ring(18, 6)))
             .ShouldHaveCode("rezept.ohne_zutaten");
 
     [Fact]

@@ -9,6 +9,12 @@ info:
     (siehe ADR 0003). Der Contract-Test `OpenApiVertragTests` prüft, dass die Implementierung
     exakt diese Pfade, Methoden und Statuscodes anbietet; Schemathesis prüft in der CI die Schemas.
 
+    **Anmeldung, Betriebe und Rollen (ADR 0015):** Jede Anfrage braucht einen Bearer-Token des Identity Providers
+    (Zitadel, ADR 0004). Der Token bestimmt den **Betrieb**; Rezepte anderer Betriebe sind nicht sichtbar und
+    verhalten sich wie nicht vorhanden (404). Rechte nach Rolle: `mitarbeiter` liest und rechnet um, `konditor`
+    legt zusätzlich an und bearbeitet/verwirft Entwürfe, `inhaber` gibt zusätzlich frei.
+    Ohne gültigen Token: 401. Ohne nötiges Recht oder ohne eindeutigen Betrieb: 403 mit `code`.
+
     **Fassungen (ADR 0013):** Ein Rezept besteht aus Fassungen 1…n. Eine Fassung ist ein `entwurf` oder
     `freigegeben`. Freigegebene Fassungen sind unveränderlich, es gibt höchstens einen Entwurf. Ein neues
     Rezept beginnt mit Fassung 1 als Entwurf. Die *maßgebliche Fassung* ist die neueste freigegebene, solange
@@ -32,6 +38,8 @@ info:
     - **428** `If-Match` fehlt bei einer Änderung am Entwurf (`anfrage.if_match_fehlt`)
 servers:
   - url: /
+security:
+  - bearer: []
 tags:
   - name: Rezepte
 paths:
@@ -64,6 +72,12 @@ paths:
           $ref: '#/components/responses/UngueltigeAnfrage'
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
+        '413':
+          $ref: '#/components/responses/ZuGross'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}:
     get:
@@ -84,6 +98,10 @@ paths:
                 $ref: '#/components/schemas/RezeptDetails'
         '404':
           $ref: '#/components/responses/NichtGefunden'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}/skaliert:
     get:
@@ -117,6 +135,10 @@ paths:
           $ref: '#/components/responses/ZustandLaesstNichtZu'
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}/skaliert/ring:
     get:
@@ -152,6 +174,10 @@ paths:
           $ref: '#/components/responses/ZustandLaesstNichtZu'
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}/skaliert/blech:
     get:
@@ -192,6 +218,10 @@ paths:
           $ref: '#/components/responses/ZustandLaesstNichtZu'
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}/fassungen/{nummer}:
     get:
@@ -213,6 +243,10 @@ paths:
                 $ref: '#/components/schemas/FassungDetails'
         '404':
           $ref: '#/components/responses/NichtGefunden'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}/entwurf:
     post:
@@ -244,6 +278,10 @@ paths:
           $ref: '#/components/responses/VeralteterStand'
         '428':
           $ref: '#/components/responses/IfMatchFehlt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
     put:
       tags: [Rezepte]
       operationId: entwurfBearbeiten
@@ -279,6 +317,12 @@ paths:
           $ref: '#/components/responses/IfMatchFehlt'
         '422':
           $ref: '#/components/responses/FachlicheRegelVerletzt'
+        '413':
+          $ref: '#/components/responses/ZuGross'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
     delete:
       tags: [Rezepte]
       operationId: entwurfVerwerfen
@@ -300,6 +344,10 @@ paths:
           $ref: '#/components/responses/VeralteterStand'
         '428':
           $ref: '#/components/responses/IfMatchFehlt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
   /api/v1/rezepte/{id}/entwurf/freigabe:
     post:
@@ -327,8 +375,19 @@ paths:
           $ref: '#/components/responses/VeralteterStand'
         '428':
           $ref: '#/components/responses/IfMatchFehlt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
 
 components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access Token des Identity Providers (Zitadel) mit Rollen für genau einen Betrieb.
+
   headers:
     ETag:
       description: Stand des Rezepts. Bei Änderungen am Entwurf als `If-Match` mitsenden.
@@ -486,6 +545,8 @@ components:
           $ref: '#/components/schemas/OptionaleBezugsform'
         zutaten:
           type: array
+          maxItems: 100
+          description: Höchstens 100 Zutatenzeilen pro Fassung (Issue #6).
           items:
             $ref: '#/components/schemas/ZutatEingabe'
 
@@ -518,6 +579,8 @@ components:
           $ref: '#/components/schemas/Bezeichnung'
         zutaten:
           type: array
+          maxItems: 100
+          description: Höchstens 100 Zutatenzeilen pro Fassung (Issue #6).
           items:
             $ref: '#/components/schemas/ZutatEingabe'
 
@@ -641,6 +704,24 @@ components:
             $ref: '#/components/schemas/ProblemDetails'
     VeralteterStand:
       description: Das Rezept wurde inzwischen geändert (`If-Match` veraltet). Neu laden und erneut versuchen.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ZuGross:
+      description: Anfrage größer als 1 MB.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NichtAngemeldet:
+      description: Kein oder kein gültiger Bearer-Token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    KeinRecht:
+      description: Angemeldet, aber ohne das nötige Recht (`recht.fehlt`) oder ohne eindeutigen Betrieb (`betrieb.nicht_eindeutig`).
       content:
         application/problem+json:
           schema:

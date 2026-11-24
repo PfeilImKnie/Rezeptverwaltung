@@ -25,8 +25,9 @@ Form umrechnen. Rezepte haben **Fassungen** mit Entwurf und Freigabe: Freigegebe
 entstehen als Entwurf und gelten erst nach der Freigabe (ADR 0013). Änderungen am Entwurf verlangen den Header
 `If-Match` mit dem `ETag` der letzten Antwort; so überschreibt kein Gerät still die Änderung eines anderen.
 
-Daten liegen in **PostgreSQL** (ADR 0008, 0011). Authentifizierung folgt (ADR 0004). Die API ist daher
-noch nicht für den öffentlichen Betrieb gedacht.
+Daten liegen in **PostgreSQL** (ADR 0008, 0011). Jede Anfrage braucht einen **Token**; jedes Rezept gehört einem
+**Betrieb**, und Rechte richten sich nach der **Rolle** (Mitarbeiter/in, Konditor/in, Inhaber/in, ADR 0015).
+Bis zum Hosting (ADR 0005) ist die API noch nicht öffentlich erreichbar.
 
 ## Voraussetzungen
 
@@ -52,7 +53,20 @@ dotnet run --project src/Host/Rezeptverwaltung.AppHost       # Aspire: PostgreSQ
 ```
 
 Der AppHost startet PostgreSQL 18 im Container mit dem Volume `rezeptverwaltung-postgres-daten` (Daten bleiben
-erhalten) und die API auf `http://localhost:5080`. Die API migriert die Datenbank beim Start.
+erhalten), einen **Test-Login** auf `http://localhost:18080` und die API auf `http://localhost:5080`. Die API migriert
+die Datenbank beim Start.
+
+Token für den Betrieb `entwicklung` holen (Rolle: `inhaber`, `konditor` oder `mitarbeiter`):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:18080/rezeptverwaltung/token \
+  -d grant_type=client_credentials -d client_id=dev -d client_secret=dev -d scope=inhaber \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+curl -H "Authorization: Bearer $TOKEN" http://localhost:5080/api/v1/rezepte/<id>
+```
+
+Rezepte aus der Zeit vor den Betrieben gehören dem Betrieb `altbestand`. Lokal einem Betrieb zuordnen:
+`UPDATE rezeptur.rezepte SET betrieb_id = 'entwicklung' WHERE betrieb_id = 'altbestand';`
 Der Postgres-Container läuft nach dem Beenden weiter, damit der nächste Start schnell ist.
 Stoppen (nur der Aspire-Container, nicht laufende Testcontainer; mit Docker `docker` statt `podman`):
 `podman ps -q --filter name=^postgres- | xargs -r podman stop`.
@@ -62,10 +76,10 @@ Secrets verloren, passt das neue Passwort nicht mehr zum vorhandenen Volume. Dan
 (`podman volume rm rezeptverwaltung-postgres-daten`, **löscht die lokalen Daten**) oder das alte Passwort
 wieder eintragen.
 
-Beispiel:
+Beispiel (Token siehe oben):
 
 ```bash
-curl -s -X POST localhost:5080/api/v1/rezepte -H 'Content-Type: application/json' \
+curl -s -X POST localhost:5080/api/v1/rezepte -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"name":"Mürbeteig","zutaten":[{"bezeichnung":"Zucker","gramm":100},{"bezeichnung":"Butter","gramm":200},{"bezeichnung":"Mehl","gramm":300}]}'
 ```
 

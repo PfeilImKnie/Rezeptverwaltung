@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Rezeptverwaltung.Rezeptur.Infrastructure.Persistence;
+using Rezeptverwaltung.SharedKernel;
 using Testcontainers.PostgreSql;
 
 namespace Rezeptverwaltung.Rezeptur.Infrastructure.Tests;
@@ -21,11 +22,12 @@ public sealed class PostgresFixture : IAsyncLifetime
     public string NeueDatenbank() =>
         new NpgsqlConnectionStringBuilder(Verbindung) { Database = $"test_{Guid.NewGuid():N}" }.ConnectionString;
 
-    internal RezepturDbContext NeuerKontext(string? verbindung = null)
+    /// <summary>Kontext für die angemeldete Person (Standard: Inhaber/in von Betrieb A).</summary>
+    internal RezepturDbContext NeuerKontext(string? verbindung = null, IAktuellerBenutzer? benutzer = null)
     {
         var optionen = new DbContextOptionsBuilder<RezepturDbContext>();
         RezepturDbContext.Konfiguriere(optionen, verbindung ?? Verbindung);
-        return new RezepturDbContext(optionen.Options);
+        return new RezepturDbContext(optionen.Options, benutzer ?? Testbenutzer.InhaberA);
     }
 
     public async ValueTask InitializeAsync()

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Rezeptverwaltung.Rezeptur.Domain.Rezepte;
+using Rezeptverwaltung.SharedKernel;
 
 namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence;
 
@@ -11,7 +12,7 @@ namespace Rezeptverwaltung.Rezeptur.Infrastructure.Persistence;
 /// Die Fassungen liegen als JSONB-Array im Rezept, jede mit ihrer Zutatenliste als JSON-Array.
 /// Arrays erhalten die Reihenfolge; die Feldnamen sind ein Vertrag mit künftigen Migrationen.
 /// </summary>
-internal sealed class RezeptKonfiguration : IEntityTypeConfiguration<Rezept>
+internal sealed class RezeptKonfiguration(RezepturDbContext kontext) : IEntityTypeConfiguration<Rezept>
 {
     /// <summary>Schatteneigenschaft für den Stand (PostgreSQL-Systemspalte xmin), Grundlage für ETag/If-Match.</summary>
     public const string Stand = "Version";
@@ -33,6 +34,16 @@ internal sealed class RezeptKonfiguration : IEntityTypeConfiguration<Rezept>
             .HasColumnName("id")
             .HasConversion(id => id.Wert, wert => new RezeptId(wert))
             .ValueGeneratedNever();
+
+        builder.Property(r => r.BetriebId)
+            .HasColumnName("betrieb_id")
+            .HasConversion(betrieb => betrieb.Wert, wert => BetriebId.Von(wert))
+            .HasMaxLength(BetriebId.MaximaleLaenge)
+            .IsRequired();
+        builder.HasIndex(r => r.BetriebId);
+
+        // Mandantenfilter (ADR 0015): nur Rezepte des eigenen Betriebs; ohne Betrieb gar keine.
+        builder.HasQueryFilter(r => kontext.AktuellerBetrieb != null && r.BetriebId == kontext.AktuellerBetrieb);
 
         builder.Property(r => r.Name)
             .HasColumnName("name")

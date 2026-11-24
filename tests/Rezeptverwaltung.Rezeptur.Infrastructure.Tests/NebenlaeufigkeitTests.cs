@@ -12,7 +12,7 @@ public sealed class NebenlaeufigkeitTests(PostgresFixture postgres) : IClassFixt
     [Fact]
     public async Task Zweite_gleichzeitige_Aenderung_wird_mit_Zustandskonflikt_abgewiesen()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Ganache"), [Zutatenzutat("Kuvertüre", 200)], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Ganache"), [Zutatenzutat("Kuvertüre", 200)], Testzeit.Jetzt);
         await using (var anlegen = postgres.NeuerKontext())
         {
             await new EfRezeptRepository(anlegen).HinzufuegenAsync(rezept, _ct);
@@ -38,7 +38,7 @@ public sealed class NebenlaeufigkeitTests(PostgresFixture postgres) : IClassFixt
     [Fact]
     public async Task Aenderungen_an_Fassungen_werden_dauerhaft_gespeichert()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Mürbeteig"), [Zutatenzutat("Mehl", 300)], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Mürbeteig"), [Zutatenzutat("Mehl", 300)], Testzeit.Jetzt);
         await using (var schreiben = postgres.NeuerKontext())
         {
             var repository = new EfRezeptRepository(schreiben);

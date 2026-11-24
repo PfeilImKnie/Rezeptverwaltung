@@ -11,16 +11,16 @@ public sealed class EntwurfUseCaseTests
 
     private async Task<Guid> FreigegebenesRezeptAsync()
     {
-        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter)
+        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA)
             .HandleAsync(new RezeptAnlegen("Wiener Masse", [new ZutatEingabe("Eier", 300), new ZutatEingabe("Zucker", 150)]), _ct);
-        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(details.Id, _repository.Stand(details.Id), _ct);
+        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(details.Id, _repository.Stand(details.Id), _ct);
         return details.Id;
     }
 
     [Fact]
     public async Task Anlegen_liefert_Fassungsuebersicht_mit_Entwurf_1()
     {
-        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter)
+        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA)
             .HandleAsync(new RezeptAnlegen("Neu", [new ZutatEingabe("Mehl", 100)]), _ct);
 
         details.MassgeblicheFassung.ShouldBe(1);
@@ -34,11 +34,11 @@ public sealed class EntwurfUseCaseTests
     {
         var id = await FreigegebenesRezeptAsync();
 
-        var entwurf = await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
-        var bearbeitet = await new EntwurfBearbeitenHandler(_repository)
+        var entwurf = await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
+        var bearbeitet = await new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA)
             .HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Eier", 320), new ZutatEingabe("Zucker", 140)], _repository.Stand(id)), _ct);
-        var freigegeben = await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
-        var details = await new RezeptAbfragenHandler(_repository).HandleAsync(id, _ct);
+        var freigegeben = await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
+        var details = await new RezeptAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, _ct);
 
         entwurf!.Nummer.ShouldBe(2);
         bearbeitet!.GesamtgewichtGramm.ShouldBe(460m);
@@ -55,11 +55,11 @@ public sealed class EntwurfUseCaseTests
     public async Task Fassung_1_bleibt_nach_neuer_Freigabe_abrufbar_und_unveraendert()
     {
         var id = await FreigegebenesRezeptAsync();
-        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
-        await new EntwurfBearbeitenHandler(_repository).HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Eier", 1)], _repository.Stand(id)), _ct);
-        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Eier", 1)], _repository.Stand(id)), _ct);
+        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
 
-        var fassung1 = await new FassungAbfragenHandler(_repository).HandleAsync(id, 1, _ct);
+        var fassung1 = await new FassungAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, 1, _ct);
 
         fassung1!.Zutaten.ShouldBe([new ZutatMenge("Eier", 300), new ZutatMenge("Zucker", 150)]);
     }
@@ -68,21 +68,21 @@ public sealed class EntwurfUseCaseTests
     public async Task Verwerfen_entfernt_den_Entwurf()
     {
         var id = await FreigegebenesRezeptAsync();
-        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
 
-        (await new EntwurfVerwerfenHandler(_repository).HandleAsync(id, _repository.Stand(id), _ct)).ShouldNotBeNull();
+        (await new EntwurfVerwerfenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct)).ShouldNotBeNull();
 
-        (await new RezeptAbfragenHandler(_repository).HandleAsync(id, _ct))!.Entwurf.ShouldBeNull();
+        (await new RezeptAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, _ct))!.Entwurf.ShouldBeNull();
     }
 
     [Fact]
     public async Task Skalieren_einer_bestimmten_Fassung()
     {
         var id = await FreigegebenesRezeptAsync();
-        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
-        await new EntwurfBearbeitenHandler(_repository)
+        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA)
             .HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Eier", 200), new ZutatEingabe("Zucker", 200)], _repository.Stand(id)), _ct);
-        var handler = new RezeptSkalierenHandler(_repository);
+        var handler = new RezeptSkalierenHandler(_repository, Testbenutzer.InhaberA);
 
         var massgeblich = await handler.HandleAsync(new RezeptSkalieren(id, 900), _ct);
         var entwurf = await handler.HandleAsync(new RezeptSkalieren(id, 900, Fassung: 2), _ct);
@@ -99,13 +99,13 @@ public sealed class EntwurfUseCaseTests
         var id = await FreigegebenesRezeptAsync();
         var unbekannt = Guid.NewGuid();
 
-        (await new FassungAbfragenHandler(_repository).HandleAsync(id, 7, _ct)).ShouldBeNull();
-        (await new FassungAbfragenHandler(_repository).HandleAsync(unbekannt, 1, _ct)).ShouldBeNull();
-        (await new RezeptSkalierenHandler(_repository).HandleAsync(new RezeptSkalieren(id, 100, Fassung: 7), _ct)).ShouldBeNull();
-        (await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(unbekannt, _repository.Stand(unbekannt), _ct)).ShouldBeNull();
-        (await new EntwurfBearbeitenHandler(_repository).HandleAsync(new EntwurfBearbeiten(unbekannt, [], _repository.Stand(unbekannt)), _ct)).ShouldBeNull();
-        (await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(unbekannt, _repository.Stand(unbekannt), _ct)).ShouldBeNull();
-        (await new EntwurfVerwerfenHandler(_repository).HandleAsync(unbekannt, _repository.Stand(unbekannt), _ct)).ShouldBeNull();
+        (await new FassungAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, 7, _ct)).ShouldBeNull();
+        (await new FassungAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(unbekannt, 1, _ct)).ShouldBeNull();
+        (await new RezeptSkalierenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new RezeptSkalieren(id, 100, Fassung: 7), _ct)).ShouldBeNull();
+        (await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(unbekannt, _repository.Stand(unbekannt), _ct)).ShouldBeNull();
+        (await new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new EntwurfBearbeiten(unbekannt, [], _repository.Stand(unbekannt)), _ct)).ShouldBeNull();
+        (await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(unbekannt, _repository.Stand(unbekannt), _ct)).ShouldBeNull();
+        (await new EntwurfVerwerfenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(unbekannt, _repository.Stand(unbekannt), _ct)).ShouldBeNull();
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class EntwurfUseCaseTests
         var id = await FreigegebenesRezeptAsync();
 
         var verletzung = await Should.ThrowAsync<DomainRuleViolationException>(
-            () => new EntwurfBearbeitenHandler(_repository).HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Eier", 0.001m)], _repository.Stand(id)), _ct));
+            () => new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Eier", 0.001m)], _repository.Stand(id)), _ct));
 
         verletzung.Code.ShouldBe("gewicht.zu_genau");
     }
@@ -125,7 +125,7 @@ public sealed class EntwurfUseCaseTests
         var id = await FreigegebenesRezeptAsync();
         var vorher = _repository.Speichervorgaenge;
 
-        await Should.ThrowAsync<DomainRuleViolationException>(() => new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct));
+        await Should.ThrowAsync<DomainRuleViolationException>(() => new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct));
 
         _repository.Speichervorgaenge.ShouldBe(vorher);
     }

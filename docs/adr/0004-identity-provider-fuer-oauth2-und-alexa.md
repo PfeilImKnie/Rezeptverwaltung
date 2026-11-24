@@ -1,6 +1,6 @@
 # 0004 – Externer Identity Provider (OIDC) für Login und Alexa-Account-Linking
 
-- **Status:** Akzeptiert (Umsetzung ausstehend)
+- **Status:** Akzeptiert; API-Seite umgesetzt, Details in [0015](0015-betriebe-rollen-und-anmeldung.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** Authentifizierung, Alexa-Adapter, Infrastruktur
 

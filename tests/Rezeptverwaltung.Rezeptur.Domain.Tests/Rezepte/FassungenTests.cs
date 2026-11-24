@@ -12,7 +12,7 @@ public sealed class FassungenTests
     private static Zutatenzeile Zeile(string bezeichnung, decimal gramm) => Zutatenzeile.Von(bezeichnung, Gewicht.Erfasst(gramm));
 
     private static Rezept NeuesRezept() =>
-        Rezept.Anlegen(RezeptName.Von("Schoko-Biskuit"), [Zeile("Eier", 300), Zeile("Zucker", 150)], Testzeit.Jetzt);
+        Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Schoko-Biskuit"), [Zeile("Eier", 300), Zeile("Zucker", 150)], Testzeit.Jetzt);
 
     private static Rezept FreigegebenesRezept()
     {
@@ -54,7 +54,7 @@ public sealed class FassungenTests
     [Fact]
     public void Fassung_ohne_Zutaten_kann_nicht_freigegeben_werden()
     {
-        var rezept = Rezept.Anlegen(RezeptName.Von("Leer"), [], Testzeit.Jetzt);
+        var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Leer"), [], Testzeit.Jetzt);
 
         var verletzung = Should.Throw<DomainRuleViolationException>(() => rezept.EntwurfFreigeben(Spaeter));
 
@@ -197,7 +197,7 @@ public sealed class FassungenTests
 
         operationen.Sample(folge =>
         {
-            var rezept = Rezept.Anlegen(RezeptName.Von("Probe"), [Zeile("Mehl", 100)], Testzeit.Jetzt);
+            var rezept = Rezept.Anlegen(Testbetrieb.A, RezeptName.Von("Probe"), [Zeile("Mehl", 100)], Testzeit.Jetzt);
             var freigegeben = new Dictionary<int, List<Zutatenzeile>>();
             var vergeben = new HashSet<int> { 1 };
             var schritt = 0;

@@ -10,6 +10,12 @@ internal sealed class EfRezeptRepository(RezepturDbContext datenbank) : IRezeptR
 {
     public async Task HinzufuegenAsync(Rezept rezept, CancellationToken cancellationToken)
     {
+        // Verteidigung in der Tiefe (ADR 0015): nur Rezepte des eigenen Betriebs anlegen.
+        if (datenbank.AktuellerBetrieb is not { } betrieb || rezept.BetriebId != betrieb)
+        {
+            throw new InvalidOperationException("Ein Rezept darf nur im Betrieb der angemeldeten Person angelegt werden.");
+        }
+
         datenbank.Rezepte.Add(rezept);
         await datenbank.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

@@ -11,26 +11,26 @@ public sealed class RezeptAufFormSkalierenUseCaseTests
     private readonly CancellationToken _ct = TestContext.Current.CancellationToken;
 
     private async Task<Guid> AnlegenAsync(Form? form, params ZutatEingabe[] zutaten) =>
-        (await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(new RezeptAnlegen("Sachermasse", zutaten, form), _ct)).Id;
+        (await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(new RezeptAnlegen("Sachermasse", zutaten, form), _ct)).Id;
 
     private Task<Guid> SachermasseAsync(Form? form) =>
         AnlegenAsync(form, new ZutatEingabe("Butter", 140), new ZutatEingabe("Zucker", 140), new ZutatEingabe("Eier", 280));
 
     private Task<SkaliertesRezept?> UmrechnenAsync(Guid id, Form zielform, int? fassung = null) =>
-        new RezeptAufFormSkalierenHandler(_repository).HandleAsync(new RezeptAufFormSkalieren(id, zielform, fassung), _ct);
+        new RezeptAufFormSkalierenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(new RezeptAufFormSkalieren(id, zielform, fassung), _ct);
 
     private async Task FreigebenUndNeuenEntwurfMitFormAsync(Guid id, Form? form)
     {
-        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
-        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
-        await new EntwurfBearbeitenHandler(_repository)
+        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA)
             .HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Butter", 100)], _repository.Stand(id), form), _ct);
     }
 
     [Fact]
     public async Task Anlegen_mit_Form_liefert_die_Form_in_den_Details()
     {
-        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter)
+        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA)
             .HandleAsync(new RezeptAnlegen("Biskuit", [new ZutatEingabe("Eier", 300)], Form.Blech(60, 40, 1.5m)), _ct);
 
         details.Bezugsform.ShouldBe(Form.Blech(60, 40, 1.5m));
@@ -39,7 +39,7 @@ public sealed class RezeptAufFormSkalierenUseCaseTests
     [Fact]
     public async Task Anlegen_ohne_Form_ist_weiterhin_moeglich()
     {
-        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter)
+        var details = await new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA)
             .HandleAsync(new RezeptAnlegen("Ganache", [new ZutatEingabe("Sahne", 500)]), _ct);
 
         details.Bezugsform.ShouldBeNull();
@@ -49,7 +49,7 @@ public sealed class RezeptAufFormSkalierenUseCaseTests
     public async Task Anlegen_mit_ungueltiger_Form_speichert_nichts()
     {
         var verletzung = await Should.ThrowAsync<DomainRuleViolationException>(
-            () => new RezeptAnlegenHandler(_repository, Testzeit.Anbieter)
+            () => new RezeptAnlegenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA)
                 .HandleAsync(new RezeptAnlegen("Biskuit", [new ZutatEingabe("Eier", 300)], Form.Ring(0.5m, 5)), _ct));
 
         verletzung.Code.ShouldBe("form.mass_ungueltig");
@@ -156,10 +156,10 @@ public sealed class RezeptAufFormSkalierenUseCaseTests
     public async Task Bearbeiten_mit_ungueltiger_Form_ohne_Entwurf_meldet_zuerst_die_Eingabe()
     {
         var id = await SachermasseAsync(Form.Ring(26, 6));
-        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter).HandleAsync(id, _repository.Stand(id), _ct);
+        await new EntwurfFreigebenHandler(_repository, Testzeit.Anbieter, Testbenutzer.InhaberA).HandleAsync(id, _repository.Stand(id), _ct);
 
         var verletzung = await Should.ThrowAsync<DomainRuleViolationException>(
-            () => new EntwurfBearbeitenHandler(_repository)
+            () => new EntwurfBearbeitenHandler(_repository, Testbenutzer.InhaberA)
                 .HandleAsync(new EntwurfBearbeiten(id, [new ZutatEingabe("Butter", 100)], _repository.Stand(id), Form.Blech(60, 40, 60)), _ct));
 
         verletzung.Code.ShouldBe("form.hoehe_ungueltig");
@@ -172,8 +172,8 @@ public sealed class RezeptAufFormSkalierenUseCaseTests
         var id = await SachermasseAsync(Form.Ring(26, 6));
         await FreigebenUndNeuenEntwurfMitFormAsync(id, Form.Blech(60, 40, 2));
 
-        var entwurf = await new FassungAbfragenHandler(_repository).HandleAsync(id, 2, _ct);
-        var details = await new RezeptAbfragenHandler(_repository).HandleAsync(id, _ct);
+        var entwurf = await new FassungAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, 2, _ct);
+        var details = await new RezeptAbfragenHandler(_repository, Testbenutzer.InhaberA).HandleAsync(id, _ct);
 
         entwurf!.Bezugsform.ShouldBe(Form.Blech(60, 40, 2));
         details!.Bezugsform.ShouldBe(Form.Ring(26, 6));

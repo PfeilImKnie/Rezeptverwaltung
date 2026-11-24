@@ -16,6 +16,7 @@ internal sealed class IfMatchAutomatik : DelegatingHandler
         if (request.Method != HttpMethod.Get && stelle > 0 && request.Headers.IfMatch.Count == 0)
         {
             using var abfrage = new HttpRequestMessage(HttpMethod.Get, new Uri(request.RequestUri, pfad[..stelle]));
+            abfrage.Headers.Authorization = request.Headers.Authorization; // seit ADR 0015 braucht auch das Lesen einen Token
             using var antwort = await base.SendAsync(abfrage, cancellationToken);
             if (antwort.Headers.ETag is { } etag)
             {
