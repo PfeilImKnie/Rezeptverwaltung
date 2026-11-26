@@ -1,4 +1,4 @@
-namespace Rezeptverwaltung.Api.Tests;
+namespace Rezeptverwaltung.Testumgebung;
 
 /// <summary>
 /// Verhält sich wie ein ordentlicher Client (ADR 0013): Vor jeder Änderung am Entwurf ohne eigenes If-Match wird der

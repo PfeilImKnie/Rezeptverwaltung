@@ -4,7 +4,7 @@ using System.Text.Json;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 
-namespace Rezeptverwaltung.Api.Tests;
+namespace Rezeptverwaltung.Testumgebung;
 
 /// <summary>Testperson: Name = Persona im Login-Server; Rollen je Betrieb wie im Zitadel-Token.</summary>
 public sealed record Persona(string Name, params (string Rolle, string Betrieb)[] Rollen)
@@ -143,6 +143,31 @@ public static class TestLogin
 
     public static AuthenticationHeaderValue Header(string token) => new("Bearer", token);
 
+    /// <summary>Client-ID der Weboberfläche beim Login-Server (wie in Zitadel: eigene Anwendung im Projekt).</summary>
+    public const string WebClientId = "rezeptverwaltung-web";
+
+    /// <summary>
+    /// Claims, die eine Person im Browser-Login eingibt: dieselben Rollen wie beim Token der Persona, und wie bei Zitadel
+    /// enthält „aud“ die Weboberfläche (für den ID-Token) und die API (für den Access Token).
+    /// </summary>
+    public static string LoginClaims(Persona persona, string? anzeigename = null)
+    {
+        ArgumentNullException.ThrowIfNull(persona);
+        var claims = new Dictionary<string, object>
+        {
+            ["aud"] = new[] { WebClientId, persona.Zielgruppe },
+            ["name"] = anzeigename ?? persona.Name,
+        };
+        if (persona.Rollen.Length > 0)
+        {
+            claims["urn:zitadel:iam:org:project:roles"] = persona.Rollen
+                .GroupBy(r => r.Rolle)
+                .ToDictionary(g => g.Key, g => g.ToDictionary(r => r.Betrieb, r => $"{r.Betrieb}.test"));
+        }
+
+        return JsonSerializer.Serialize(claims);
+    }
+
     /// <summary>Token eines fremden Ausstellers (anderer Pfad im Login-Server, also anderes „iss“).</summary>
     public static async Task<string> FremderAusstellerTokenAsync()
     {
@@ -188,7 +213,8 @@ public static class TestLogin
 
         return JsonSerializer.Serialize(new
         {
-            interactiveLogin = false,
+            // Browser-Login der Weboberfläche (ADR 0016): Testperson und Claims kommen aus dem Login-Formular.
+            interactiveLogin = true,
             tokenCallbacks = new[] { new { issuerId = Aussteller, tokenExpiry = 3600, requestMappings = zuordnungen } },
         });
     }

@@ -6,6 +6,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Host\Rezeptverwaltung.Api\Rezeptverwaltung.Api.csproj" />
+    <ProjectReference Include="..\Rezeptverwaltung.Testumgebung\Rezeptverwaltung.Testumgebung.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Rezeptverwaltung.Testumgebung" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\api\openapi.yaml" Link="openapi.yaml" CopyToOutputDirectory="PreserveNewest" />

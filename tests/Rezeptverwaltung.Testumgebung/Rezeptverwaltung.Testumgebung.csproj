@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Gemeinsame Testumgebung: echter Login-Server (OIDC) und die API im Speicher gegen echtes PostgreSQL (ADR 0015). -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Host\Rezeptverwaltung.Api\Rezeptverwaltung.Api.csproj" />
+  </ItemGroup>
+</Project>
