@@ -1,6 +1,6 @@
 # Rezeptverwaltung
 
-Rezeptverwaltung für eine Konditormeisterin. API-first, DDD, .NET 10. Geplante Frontends: Tablet-PWA, Alexa-Skill.
+Rezeptverwaltung für eine Konditormeisterin. API-first, DDD, .NET 10. Frontends: Weboberfläche (Blazor, Tablet-PWA), geplant Alexa-Skill.
 
 ## Befehle
 
@@ -9,7 +9,7 @@ dotnet build Rezeptverwaltung.slnx                        # Warnungen = Fehler
 dotnet test --solution Rezeptverwaltung.slnx              # Microsoft Testing Platform (global.json)
 dotnet format Rezeptverwaltung.slnx                       # vor jedem Commit
 cd tests/Rezeptverwaltung.Rezeptur.Domain.Tests && dotnet tool restore && dotnet stryker   # Mutation Testing, Schwelle 80 %
-dotnet run --project src/Host/Rezeptverwaltung.AppHost    # lokal: Aspire startet PostgreSQL (Podman/Docker) + API auf :5080
+dotnet run --project src/Host/Rezeptverwaltung.AppHost    # lokal: Aspire startet PostgreSQL + Test-Login (:18080) + API (:5080) + Weboberfläche (:5090)
 # Neue Migration nach Modelländerung (Test „Modell_und_Migrationen_stimmen_ueberein“ erzwingt das):
 dotnet ef migrations add <Name> --project src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Infrastructure \
   --startup-project src/Modules/Rezeptur/Rezeptverwaltung.Rezeptur.Infrastructure --output-dir Persistence/Migrations
@@ -34,13 +34,18 @@ src/Modules/<Kontext>/
                                   öffentlich nur <Kontext>Module (AddXModule / MapXModule)
 src/Host/Rezeptverwaltung.Api     Komposition, Problem Details, OpenAPI, Migration beim Start
 src/Host/Rezeptverwaltung.AppHost Aspire (nur lokale Entwicklung)
-tests/                            Domain-, Application-, API-, Architektur- und Persistenztests (Testcontainers)
+src/Web/Rezeptverwaltung.Web      Weboberfläche: Server (BFF: Login, Cookie, Weiterleitung /api → API mit Token)
+src/Web/Rezeptverwaltung.Web.Client  Seiten (Blazor WebAssembly), spricht nur über /api und /bff mit dem eigenen Server
+tests/                            Domain-, Application-, API-, Architektur-, Persistenz- (Testcontainers) und Web-Tests;
+                                  Testumgebung = gemeinsamer Login-Server + API-Fabrik
 ```
 
 - Module greifen nicht aufeinander zu. Neue Module werden in `tests/Rezeptverwaltung.ArchitectureTests/ArchitekturTests.cs` → `Module` eingetragen.
 - Fachregeln: `DomainRuleViolationException.Wenn(...)` = ungültige Eingabe → 422, `.ZustandWenn(...)` = Zustand lässt es nicht zu → 409, jeweils mit `code`. Eingaben vor dem Zustand prüfen. Codes sind stabil (`bereich.regel`, snake_case) (ADR 0009).
 - Anmeldung, Betriebe, Rollen (ADR 0015): Jeder Endpunkt verlangt Anmeldung (Fallback-Policy, Ausnahmen nur `/health`, `/openapi`). Jeder Use Case prüft zuerst das Recht (`ZugriffVerweigertException.Pruefen` mit `Rechte.*`) und behandelt Rezepte anderer Betriebe als nicht vorhanden (`Rechte.NurEigenes`). Jedes neue Aggregat bekommt eine `BetriebId` und einen Mandantenfilter (`HasQueryFilter`). Prüfreihenfolge: 413 → 401 → 403 → 404 → 428/412 → 422 → 409.
+- Web-Tests: Seiten mit bUnit gegen `FakeRezeptApi`; Server mit `WebFactory` (echter Login + echte API, `AngemeldetAlsAsync`); Kernabläufe mit Playwright in `BrowserTests` (Bildschirmfotos mit `REZEPTE_SCREENSHOTS=<ordner>`). API und Web haben beide `Program`: Web-Projekt mit `Aliases="WebHost"` referenzieren.
 - Tests: API-Clients sind als Inhaber/in von Betrieb A angemeldet (`ApiFactory`, echte Tokens vom Test-Login); andere Personen über `CreateClientAlsAsync(Persona.…)`. Neue Operationen werden über `AnmeldungApiTests` automatisch auf 401 geprüft.
+- Weboberfläche (ADR 0016): kennt nur den HTTP-Vertrag (ArchUnit), nie Module oder SharedKernel. Nie einen Token in den Browser geben; Browser-Aufrufe gehen an `/api/**` (Weiterleitung mit Bearer) oder `/bff/**` und tragen `X-CSRF: 1`. Rechte nur ausblenden (`/rezepte/berechtigungen`), prüfen tut die API. Zahlen ein- und ausgeben nur über `Zahlen` (Komma, keine Tausenderpunkte bei der Eingabe). Editorfelder mit `@bind:event="oninput"`, damit „Speichern“ sofort aktiv wird.
 - Fassungen (ADR 0013): Änderungen nur am Entwurf, freigegebene Fassungen sind unveränderlich, Nummern nie wiederverwenden. Ändernde Endpunkte verlangen `If-Match` (Stand = ETag aus `IRezeptRepository.StandVon`), Prüfreihenfolge 404 → 428/412 → 422 → 409. Zeitpunkte aus `TimeProvider`, nie `DateTime.Now`.
 - Bezugsform (ADR 0014): optional pro Fassung, Ring oder Blech, cm auf 0,1 genau; Umrechnen über das Volumen. `PUT …/entwurf` ersetzt den Inhalt vollständig (ohne `bezugsform` = ohne Form). Faktoren in der Ausgabe auf 12 signifikante Stellen runden (nie auf Nachkommastellen, sonst werden kleine Faktoren 0).
 - Zahlen strikt: keine Zahlen als JSON-Strings; Gramm/Zentimeter in Query-Parametern über die Typen `Gramm`/`Zentimeter` binden, nie direkt als `decimal`, weil sonst "1,5" als 15 gelesen wird.

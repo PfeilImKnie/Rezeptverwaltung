@@ -1,6 +1,6 @@
 # 0005 – Hosting auf einer Hetzner-Cloud-VM mit Docker Compose
 
-- **Status:** Akzeptiert (Umsetzung ausstehend)
+- **Status:** Akzeptiert (Umsetzung ausstehend); zusätzlicher Dienst `web` durch [0016](0016-weboberflaeche-blazor-mit-bff.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** Betrieb, Infrastruktur
 

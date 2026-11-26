@@ -1,6 +1,6 @@
 # 0006 – Teststrategie: alles automatisiert verifiziert
 
-- **Status:** Akzeptiert
+- **Status:** Akzeptiert; Oberflächentests (bUnit, BFF, Playwright) ergänzt durch [0016](0016-weboberflaeche-blazor-mit-bff.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** alle Projekte, CI
 
