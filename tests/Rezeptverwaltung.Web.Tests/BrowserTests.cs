@@ -32,6 +32,8 @@ public sealed class BrowserFactory : WebFactory
             throw new InvalidOperationException("Chromium für Playwright konnte nicht installiert werden.");
         }
 
+        // Der erste Start der WebAssembly-App dauert auf CI-Runnern (mit Coverage) deutlich länger als lokal.
+        Assertions.SetDefaultExpectTimeout(30_000);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         Browser = await Playwright.Chromium.LaunchAsync();
     }
@@ -57,7 +59,7 @@ public sealed class BrowserTests(BrowserFactory web) : IClassFixture<BrowserFact
             ViewportSize = new ViewportSize { Width = 1024, Height = 1366 }, // Tablet hochkant
         });
         var seite = await kontext.NewPageAsync();
-        seite.SetDefaultTimeout(20_000);
+        seite.SetDefaultTimeout(30_000);
 
         await seite.GotoAsync(web.Adresse);
         // Login-Seite des Test-Login-Servers (statt Zitadel).
