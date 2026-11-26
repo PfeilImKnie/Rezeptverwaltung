@@ -44,6 +44,37 @@ tags:
   - name: Rezepte
 paths:
   /api/v1/rezepte:
+    get:
+      tags: [Rezepte]
+      operationId: rezepteAuflisten
+      summary: Listet die Rezepte des eigenen Betriebs, alphabetisch nach Name.
+      description: |
+        Mit `suche` nur Rezepte, deren Name den Suchtext enthält. Groß-/Kleinschreibung und Akzente zählen nicht
+        („kase“ findet „Käsekuchen“). Leerraum am Rand wird ignoriert; ein leerer Suchtext liefert alle Rezepte.
+      parameters:
+        - name: suche
+          in: query
+          required: false
+          description: Suchtext, höchstens 100 Unicode-Codepoints.
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Die Rezepte (auch eine leere Liste).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RezeptUebersicht'
+        '422':
+          $ref: '#/components/responses/FachlicheRegelVerletzt'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
+
     post:
       tags: [Rezepte]
       operationId: rezeptAnlegen
@@ -74,6 +105,26 @@ paths:
           $ref: '#/components/responses/FachlicheRegelVerletzt'
         '413':
           $ref: '#/components/responses/ZuGross'
+        '401':
+          $ref: '#/components/responses/NichtAngemeldet'
+        '403':
+          $ref: '#/components/responses/KeinRecht'
+
+  /api/v1/rezepte/berechtigungen:
+    get:
+      tags: [Rezepte]
+      operationId: berechtigungenAbfragen
+      summary: Was die angemeldete Person mit Rezepten darf.
+      description: |
+        Für Oberflächen, die Aktionen ohne Recht ausblenden. Maßgeblich bleibt die Prüfung jeder einzelnen
+        Operation (403). Ohne passende Rolle sind alle Werte `false`; Rollen in mehreren Betrieben ergeben 403.
+      responses:
+        '200':
+          description: Die Rechte im eigenen Betrieb.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Berechtigungen'
         '401':
           $ref: '#/components/responses/NichtAngemeldet'
         '403':
@@ -638,6 +689,40 @@ components:
         gesamtgewichtGramm:
           type: number
           minimum: 0
+
+    RezeptUebersicht:
+      type: object
+      required: [id, name, massgeblicheFassung, aktuelleFassung, entwurf]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        massgeblicheFassung:
+          $ref: '#/components/schemas/Fassungsnummer'
+        aktuelleFassung:
+          description: Neueste freigegebene Fassung, `null` solange keine freigegeben ist.
+          type: [integer, 'null']
+          format: int32
+        entwurf:
+          description: Nummer des Entwurfs, `null` wenn es keinen gibt.
+          type: [integer, 'null']
+          format: int32
+
+    Berechtigungen:
+      type: object
+      required: [lesen, bearbeiten, freigeben]
+      properties:
+        lesen:
+          type: boolean
+          description: Rezepte und Fassungen lesen und umrechnen.
+        bearbeiten:
+          type: boolean
+          description: Rezepte anlegen; Entwürfe anlegen, bearbeiten und verwerfen.
+        freigeben:
+          type: boolean
+          description: Entwürfe freigeben.
 
     SkaliertesRezept:
       type: object

@@ -22,6 +22,13 @@ internal static class RezepturEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden);
 
+        rezepte.MapGet("/", RezepteAuflistenAsync)
+            .WithName("rezepteAuflisten")
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        rezepte.MapGet("/berechtigungen", BerechtigungenAbfragen)
+            .WithName("berechtigungenAbfragen");
+
         rezepte.MapPost("/", RezeptAnlegenAsync)
             .WithName("rezeptAnlegen")
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -77,6 +84,18 @@ internal static class RezepturEndpoints
 
         return endpoints;
     }
+
+    private static async Task<Ok<List<RezeptUebersichtResponse>>> RezepteAuflistenAsync(
+        string? suche,
+        RezepteAuflistenHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var rezepte = await handler.HandleAsync(suche, cancellationToken).ConfigureAwait(false);
+        return TypedResults.Ok(rezepte.Select(RezeptUebersichtResponse.Aus).ToList());
+    }
+
+    private static Ok<BerechtigungenResponse> BerechtigungenAbfragen(BerechtigungenAbfragenHandler handler) =>
+        TypedResults.Ok(BerechtigungenResponse.Aus(handler.Handle()));
 
     private static async Task<Created<RezeptDetailsResponse>> RezeptAnlegenAsync(
         RezeptAnlegenRequest request,

@@ -23,6 +23,10 @@ internal sealed class InMemoryRezeptRepositoryFake : IRezeptRepository
     public Task<Rezept?> LadenAsync(RezeptId id, CancellationToken cancellationToken) =>
         Task.FromResult(Gespeichert.GetValueOrDefault(id));
 
+    /// <summary>Liefert bewusst die Rezepte <b>aller</b> Betriebe: Der Use Case muss selbst filtern (zweite Verteidigungslinie).</summary>
+    public Task<IReadOnlyList<Rezept>> AlleAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Rezept>>(Gespeichert.Values.ToList());
+
     public Task SpeichernAsync(Rezept rezept, CancellationToken cancellationToken)
     {
         Speichervorgaenge++;

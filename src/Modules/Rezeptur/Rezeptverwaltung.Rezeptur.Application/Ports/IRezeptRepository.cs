@@ -9,6 +9,9 @@ public interface IRezeptRepository
 
     Task<Rezept?> LadenAsync(RezeptId id, CancellationToken cancellationToken);
 
+    /// <summary>Alle Rezepte des Betriebs der angemeldeten Person, nur zum Lesen (nicht speicherbar).</summary>
+    Task<IReadOnlyList<Rezept>> AlleAsync(CancellationToken cancellationToken);
+
     /// <summary>
     /// Speichert Änderungen an einem zuvor geladenen Rezept. Hat jemand anderes das Rezept inzwischen geändert,
     /// wird eine Regelverletzung mit Code <c>rezept.gleichzeitig_geaendert</c> (Zustandskonflikt, 409) ausgelöst.

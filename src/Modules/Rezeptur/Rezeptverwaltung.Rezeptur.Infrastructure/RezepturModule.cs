@@ -22,6 +22,8 @@ public static class RezepturModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<RezeptAnlegenHandler>();
         services.AddScoped<RezeptAbfragenHandler>();
+        services.AddScoped<RezepteAuflistenHandler>();
+        services.AddScoped<BerechtigungenAbfragenHandler>();
         services.AddScoped<RezeptSkalierenHandler>();
         services.AddScoped<RezeptAufFormSkalierenHandler>();
         services.AddScoped<FassungAbfragenHandler>();
