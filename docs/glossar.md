@@ -7,6 +7,7 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 |---|---|---|
 | **Betrieb** | Ein Mandant, z. B. eine Konditorei. Jedes Rezept gehört genau einem Betrieb; andere Betriebe sehen es nicht. Entspricht der Organisation im Identity Provider. | `BetriebId` |
 | **Rolle** | Recht einer Person in ihrem Betrieb: **Mitarbeiter/in** (lesen, umrechnen), **Konditor/in** (zusätzlich anlegen, Entwürfe bearbeiten/verwerfen), **Inhaber/in** (zusätzlich freigeben). | `Rolle` |
+| **Betreiber** | Wer die App betreibt (Hosting, Zitadel). Legt als Einziger neue Betriebe an (ADR 0017). | – |
 | **Rezept** | Eine Rezeptur mit Namen und ihren Fassungen, gehört einem Betrieb. Konsistenzgrenze (Aggregat). | `Rezept` |
 | **Fassung** | Ein Stand eines Rezepts mit eigener Zutatenliste (höchstens 100 Zeilen), fortlaufend nummeriert (1, 2, 3 …). Nummern werden nie wiederverwendet, auch nicht nach dem Verwerfen eines Entwurfs. | `Fassung` |
 | **Entwurf** | Fassung in Arbeit: darf geändert werden, gilt aber noch nicht. Es gibt höchstens einen. Ein neues Rezept beginnt mit Fassung 1 als Entwurf; ein späterer Entwurf entsteht als Kopie der aktuellen Fassung. | `FassungsStatus.Entwurf` |
@@ -14,6 +15,8 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 | **Verwerfen** | Löscht den Entwurf. Nicht möglich, wenn er die einzige Fassung des Rezepts ist. | `Rezept.EntwurfVerwerfen` |
 | **Aktuelle Fassung** | Die neueste freigegebene Fassung. | `Rezept.AktuelleFassung` |
 | **Maßgebliche Fassung** | Die Fassung, die ohne ausdrückliche Angabe gilt: die aktuelle Fassung, solange es keine gibt, der Entwurf. | `Rezept.MassgeblicheFassung` |
+| **Rezeptsuche** | Suche nach Rezeptnamen: findet Namen, die den Suchtext enthalten. Groß-/Kleinschreibung und Akzente zählen nicht („kase“ findet „Käsekuchen“), höchstens 100 Zeichen. Rezeptlisten sind alphabetisch sortiert, Umlaute wie der Grundbuchstabe. | `Rezeptsuche` |
+| **Berechtigungen** | Was die angemeldete Person mit Rezepten darf (lesen, bearbeiten, freigeben); ergibt sich aus ihrer Rolle. | `Berechtigungen` |
 | **Zutatenzeile** | Eine Zeile der Zutatenliste: Bezeichnung + Menge. Dieselbe Zutat darf mehrfach vorkommen (z. B. Zucker im Teig und im Eischnee). | `Zutatenzeile` |
 | **Gewicht** | Menge in Gramm. In der Konditorei wird ausschließlich nach Gewicht gearbeitet. | `Gewicht` |
 | **Erfasstes Gewicht** | Ein von einem Menschen eingegebenes Gewicht: 0 bis 1.000.000.000 g, auf 0,01 g genau. | `Gewicht.Erfasst` |
@@ -35,4 +38,5 @@ Neue Begriffe gehören in denselben PR, in dem sie eingeführt werden.
 | **Zubereitung** | Protokoll, wann ein Rezept in welcher Fassung und Größe zubereitet wurde, mit den Fassungen aller Komponenten. Wird nie nachträglich verändert. |
 | **Ausbeute / Backverlust** | Verhältnis von Fertiggewicht zu Teigeinlage. |
 | **Arbeitssitzung** | Laufende Zubereitung eines Rezepts (aktueller Schritt). Grundlage für die Bedienung per Sprache (Alexa). |
+| **Einladung** | Die Inhaberin bzw. der Inhaber lädt eine Person per E-Mail mit einer Rolle in den Betrieb ein (ADR 0017). |
 | **Allergene** | Die 14 Hauptallergene nach LMIV, aus den Zutaten über alle Komponenten abgeleitet. |

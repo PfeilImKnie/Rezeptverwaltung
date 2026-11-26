@@ -1,0 +1,69 @@
+@page "/rezepte/neu"
+@inject IRezeptApi Api
+@inject NavigationManager Navigation
+
+<PageTitle>Neues Rezept</PageTitle>
+
+<p class="zurueck"><a href="">← Rezepte</a></p>
+<h1>Neues Rezept</h1>
+
+@if (!Sitzung.Rechte.Bearbeiten)
+{
+    <p class="hinweis">Zum Anlegen von Rezepten fehlt dir das Recht.</p>
+}
+else
+{
+    <form class="rezept-formular" @onsubmit="SpeichernAsync">
+        <label class="name">Name<input @bind="_name" placeholder="z. B. Sachertorte" maxlength="200" required /></label>
+        <FormEditor Eingabe="_form" />
+        <ZutatenEditor Zeilen="_zeilen" />
+        <Meldung Fehler="_fehler" Texte="_eingabefehler" />
+        <div class="aktionen">
+            <button type="submit" class="knopf" disabled="@_speichert">Anlegen</button>
+            <a class="knopf zweitrangig" href="">Abbrechen</a>
+        </div>
+        <p class="hinweis">Das Rezept beginnt als Entwurf (Fassung 1).@(Sitzung.Rechte.Freigeben ? string.Empty : " Freigeben kann die Inhaberin oder der Inhaber.")</p>
+    </form>
+}
+
+@code {
+    [CascadingParameter] public SitzungsInfo Sitzung { get; set; } = default!;
+
+    private string _name = string.Empty;
+    private readonly FormEingabe _form = new();
+    private readonly List<ZeileEingabe> _zeilen = [new(), new(), new()];
+    private List<string> _eingabefehler = [];
+    private ApiFehlerException? _fehler;
+    private bool _speichert;
+
+    private async Task SpeichernAsync()
+    {
+        _fehler = null;
+        _eingabefehler = [];
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _eingabefehler.Add("Bitte einen Namen eintragen.");
+        }
+
+        var inhalt = Inhaltseingabe.Lesen(_form, _zeilen, _eingabefehler);
+        if (_eingabefehler.Count > 0)
+        {
+            return;
+        }
+
+        _speichert = true;
+        try
+        {
+            var rezept = await Api.AnlegenAsync(_name, inhalt);
+            Navigation.NavigateTo($"rezepte/{rezept.Wert.Id}");
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+        finally
+        {
+            _speichert = false;
+        }
+    }
+}

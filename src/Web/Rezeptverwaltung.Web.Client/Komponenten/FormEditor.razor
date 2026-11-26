@@ -1,0 +1,42 @@
+@* Bezugsform wählen: ohne Form, Ring oder Blech, Maße in cm auf 0,1 cm. *@
+<fieldset class="form-editor">
+    <legend>Bezugsform</legend>
+    <div class="auswahl" role="radiogroup" aria-label="Formart">
+        <button type="button" role="radio" aria-checked="@(Eingabe.Art == string.Empty)" class="@Aktiv(string.Empty)" @onclick="() => ArtSetzen(string.Empty)">Ohne Form</button>
+        <button type="button" role="radio" aria-checked="@(Eingabe.Art == Form.Ring)" class="@Aktiv(Form.Ring)" @onclick="() => ArtSetzen(Form.Ring)">Ring</button>
+        <button type="button" role="radio" aria-checked="@(Eingabe.Art == Form.Blech)" class="@Aktiv(Form.Blech)" @onclick="() => ArtSetzen(Form.Blech)">Blech / Rahmen</button>
+    </div>
+    @if (Eingabe.Art == Form.Ring)
+    {
+        <div class="masse">
+            <label>Durchmesser (cm)<input inputmode="decimal" @bind="Eingabe.Durchmesser" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" placeholder="26" /></label>
+            <label>Höhe (cm)<input inputmode="decimal" @bind="Eingabe.Hoehe" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" placeholder="6" /></label>
+        </div>
+    }
+    else if (Eingabe.Art == Form.Blech)
+    {
+        <div class="masse">
+            <label>Länge (cm)<input inputmode="decimal" @bind="Eingabe.Laenge" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" placeholder="40" /></label>
+            <label>Breite (cm)<input inputmode="decimal" @bind="Eingabe.Breite" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" placeholder="30" /></label>
+            <label>Höhe (cm)<input inputmode="decimal" @bind="Eingabe.Hoehe" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" placeholder="2" /></label>
+        </div>
+    }
+    else
+    {
+        <p class="hinweis">Ohne Form (z. B. Cremes) lässt sich nur nach Gewicht umrechnen.</p>
+    }
+</fieldset>
+
+@code {
+    [Parameter, EditorRequired] public FormEingabe Eingabe { get; set; } = new();
+
+    [Parameter] public EventCallback Geaendert { get; set; }
+
+    private string Aktiv(string art) => Eingabe.Art == art ? "aktiv" : string.Empty;
+
+    private async Task ArtSetzen(string art)
+    {
+        Eingabe.Art = art;
+        await Geaendert.InvokeAsync();
+    }
+}

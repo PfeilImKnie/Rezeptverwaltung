@@ -1,0 +1,181 @@
+/* Rezeptverwaltung – für das Tablet in der Backstube: große Schrift, große Schaltflächen, ruhige Farben. */
+:root {
+    --hintergrund: #faf6f1;
+    --flaeche: #ffffff;
+    --text: #2b211a;
+    --gedaempft: #6f6158;
+    --akzent: #7a4b2a;
+    --akzent-hell: #f1e5d9;
+    --linie: #e2d6ca;
+    --gefahr: #a1271c;
+    --entwurf: #8a5a00;
+    --entwurf-hell: #fff4d6;
+    --radius: 10px;
+    color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --hintergrund: #1c1714;
+        --flaeche: #26201c;
+        --text: #f2e9e1;
+        --gedaempft: #b5a79c;
+        --akzent: #e0a978;
+        --akzent-hell: #3a2c22;
+        --linie: #43372f;
+        --gefahr: #ff8a7e;
+        --entwurf: #ffcf66;
+        --entwurf-hell: #3b3018;
+        color-scheme: dark;
+    }
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 18px; -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--hintergrund);
+    color: var(--text);
+    line-height: 1.45;
+}
+
+a { color: var(--akzent); }
+
+h1 { font-size: 1.7rem; margin: 0.4rem 0 0.6rem; }
+h2 { font-size: 1.25rem; margin: 1.6rem 0 0.6rem; }
+
+.laden { color: var(--gedaempft); padding: 1rem; }
+body:has(.app-bereit) #app-laden { display: none; }
+
+.kopf {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    background: var(--flaeche);
+    border-bottom: 1px solid var(--linie);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.kopf .marke { font-weight: 700; font-size: 1.3rem; text-decoration: none; margin-right: auto; }
+.kopf .person { color: var(--gedaempft); }
+.kopf form { margin: 0; }
+
+main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
+
+.titelzeile { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+.knopf, button {
+    font: inherit;
+    min-height: 48px;
+    padding: 0.5rem 1.1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--akzent);
+    background: var(--akzent);
+    color: var(--flaeche);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+.knopf.zweitrangig, button.zweitrangig, .auswahl button, button.klein {
+    background: var(--flaeche);
+    color: var(--akzent);
+}
+.knopf.gefahr, button.gefahr { border-color: var(--gefahr); }
+.knopf.gefahr:not(.zweitrangig) { background: var(--gefahr); color: var(--flaeche); }
+.knopf.zweitrangig.gefahr { color: var(--gefahr); }
+button:disabled, .knopf:disabled { opacity: 0.45; cursor: not-allowed; }
+button.klein { min-width: 48px; padding: 0.3rem; }
+
+input {
+    font: inherit;
+    min-height: 48px;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--linie);
+    border-radius: var(--radius);
+    background: var(--flaeche);
+    color: var(--text);
+    width: 100%;
+}
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+
+label { display: flex; flex-direction: column; gap: 0.25rem; font-weight: 600; }
+
+.suche { margin: 0.5rem 0 1rem; }
+
+.rezeptliste { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.rezeptliste a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    min-height: 56px;
+    background: var(--flaeche);
+    border: 1px solid var(--linie);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text);
+}
+.rezeptliste .name { font-weight: 600; }
+
+.marke-entwurf {
+    background: var(--entwurf-hell);
+    color: var(--entwurf);
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.fassung-info { color: var(--gedaempft); margin-top: 0; }
+.zurueck { margin: 0; }
+.hinweis { color: var(--gedaempft); }
+
+.aktionen { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 1rem 0; }
+.rueckfrage { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-weight: 600; }
+
+table.zutaten { width: 100%; border-collapse: collapse; background: var(--flaeche); border-radius: var(--radius); overflow: hidden; }
+table.zutaten th, table.zutaten td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--linie); }
+table.zutaten .zahl { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.zutaten tfoot th { border-bottom: none; }
+
+.meldung { border-radius: var(--radius); padding: 0.6rem 1rem; margin: 0.8rem 0; }
+.meldung.fehler { background: color-mix(in srgb, var(--gefahr) 12%, var(--flaeche)); border: 1px solid var(--gefahr); }
+.meldung p { margin: 0.2rem 0; }
+.meldung ul { margin: 0.2rem 0; padding-left: 1.2rem; }
+
+fieldset { border: 1px solid var(--linie); border-radius: var(--radius); padding: 0.8rem 1rem 1rem; margin: 1rem 0; background: var(--flaeche); }
+legend { font-weight: 700; padding: 0 0.3rem; }
+
+.auswahl { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
+.auswahl button.aktiv { background: var(--akzent); color: var(--flaeche); }
+
+.masse { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.6rem; align-items: end; }
+
+.rezept-formular .name { margin-bottom: 0.5rem; }
+
+.zutaten-editor ol { padding-left: 1.6rem; margin: 0 0 0.8rem; display: grid; gap: 0.5rem; }
+.zutaten-editor li { display: grid; grid-template-columns: 1fr 9rem auto; gap: 0.5rem; align-items: center; }
+.zutaten-editor .gramm { display: flex; align-items: center; gap: 0.3rem; }
+.zutaten-editor .zeilen-knoepfe { display: flex; gap: 0.3rem; }
+.zutaten-editor .entfernen { color: var(--gefahr); border-color: var(--gefahr); }
+
+@media (max-width: 40rem) {
+    .zutaten-editor li { grid-template-columns: 1fr 7.5rem; }
+    .zutaten-editor .zeilen-knoepfe { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
+.umrechnen { margin-top: 1.2rem; padding: 0.8rem 1rem 1rem; background: var(--akzent-hell); border-radius: var(--radius); }
+.umrechnen h2 { margin-top: 0.2rem; }
+.umrechnen .ergebnis { margin-top: 1rem; }
+
+.fassungen ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+.fassungen li { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }

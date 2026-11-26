@@ -1,0 +1,62 @@
+@page "/rezepte/{Id:guid}/fassungen/{Nummer:int}"
+@inject IRezeptApi Api
+
+<PageTitle>Fassung @Nummer</PageTitle>
+
+<p class="zurueck"><a href="@($"rezepte/{Id}")">← Zum Rezept</a></p>
+<Meldung Fehler="_fehler" />
+
+@if (_fassung is { Wert: var fassung })
+{
+    <h1>Fassung @fassung.Nummer</h1>
+    <p class="fassung-info">
+        @if (fassung.IstEntwurf)
+        {
+            <span class="marke-entwurf">Entwurf vom @Rezept.Datum(fassung.ErstelltAm)</span>
+        }
+        else
+        {
+            <span>Freigegeben am @Rezept.Datum(fassung.FreigegebenAm!.Value)</span>
+        }
+        @if (fassung.Bezugsform is { } form)
+        {
+            <span> · @form.Beschreibung</span>
+        }
+    </p>
+    <ZutatenTabelle Zutaten="fassung.Zutaten" GesamtGramm="fassung.GesamtgewichtGramm" />
+    @if (fassung.Zutaten.Count > 0)
+    {
+        <Umrechnen RezeptId="Id" Fassung="Nummer" Bezugsform="fassung.Bezugsform" GesamtGramm="fassung.GesamtgewichtGramm" />
+    }
+}
+else if (_nichtGefunden)
+{
+    <h1>Fassung nicht gefunden</h1>
+}
+else if (_fehler is null)
+{
+    <p class="laden">Fassung wird geladen …</p>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [Parameter] public int Nummer { get; set; }
+
+    private MitStand<FassungDetails>? _fassung;
+    private ApiFehlerException? _fehler;
+    private bool _nichtGefunden;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _fassung = Nummer < 1 ? null : await Api.FassungAsync(Id, Nummer);
+            _nichtGefunden = _fassung is null;
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+    }
+}

@@ -55,6 +55,17 @@ internal sealed record FassungUebersichtResponse(int Nummer, string Status, Date
         new(fassung.Nummer, StatusText.Von(fassung.Status), fassung.ErstelltAm, fassung.FreigegebenAm);
 }
 
+internal sealed record RezeptUebersichtResponse(Guid Id, string Name, int MassgeblicheFassung, int? AktuelleFassung, int? Entwurf)
+{
+    public static RezeptUebersichtResponse Aus(RezeptUebersicht rezept) =>
+        new(rezept.Id, rezept.Name, rezept.MassgeblicheFassung, rezept.AktuelleFassung, rezept.Entwurf);
+}
+
+internal sealed record BerechtigungenResponse(bool Lesen, bool Bearbeiten, bool Freigeben)
+{
+    public static BerechtigungenResponse Aus(Berechtigungen rechte) => new(rechte.Lesen, rechte.Bearbeiten, rechte.Freigeben);
+}
+
 internal sealed record RezeptDetailsResponse(
     Guid Id,
     string Name,

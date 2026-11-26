@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <ItemGroup>
+    <PackageReference Include="bunit" />
+    <PackageReference Include="CsCheck" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Alias, weil API und Weboberfläche beide eine Klasse „Program“ im globalen Namensraum haben. -->
+    <ProjectReference Include="..\..\src\Web\Rezeptverwaltung.Web\Rezeptverwaltung.Web.csproj" Aliases="WebHost" />
+    <ProjectReference Include="..\..\src\Web\Rezeptverwaltung.Web.Client\Rezeptverwaltung.Web.Client.csproj" />
+    <ProjectReference Include="..\Rezeptverwaltung.Testumgebung\Rezeptverwaltung.Testumgebung.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Rezeptverwaltung.Testumgebung" />
+  </ItemGroup>
+</Project>

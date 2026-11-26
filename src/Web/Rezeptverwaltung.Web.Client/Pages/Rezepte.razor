@@ -1,0 +1,81 @@
+@page "/"
+@inject IRezeptApi Api
+
+<PageTitle>Rezepte</PageTitle>
+
+<div class="titelzeile">
+    <h1>Rezepte</h1>
+    @if (Sitzung.Rechte.Bearbeiten)
+    {
+        <a class="knopf" href="rezepte/neu">+ Neues Rezept</a>
+    }
+</div>
+
+<input type="search" class="suche" placeholder="Suchen …" aria-label="Rezepte suchen"
+       @bind="_suche" @bind:event="oninput" @bind:after="SuchenAsync" />
+
+<Meldung Fehler="_fehler" />
+
+@if (_rezepte is null)
+{
+    <p class="laden">Rezepte werden geladen …</p>
+}
+else if (_rezepte.Count == 0)
+{
+    <p class="hinweis">@(string.IsNullOrWhiteSpace(_suche) ? "Noch keine Rezepte." : "Kein Rezept passt zur Suche.")</p>
+}
+else
+{
+    <ul class="rezeptliste">
+        @foreach (var rezept in _rezepte)
+        {
+            <li @key="rezept.Id">
+                <a href="@($"rezepte/{rezept.Id}")">
+                    <span class="name">@rezept.Name</span>
+                    @if (rezept.AktuelleFassung is null)
+                    {
+                        <span class="marke-entwurf">noch nicht freigegeben</span>
+                    }
+                    else if (rezept.Entwurf is not null)
+                    {
+                        <span class="marke-entwurf">Entwurf offen</span>
+                    }
+                </a>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [CascadingParameter] public SitzungsInfo Sitzung { get; set; } = default!;
+
+    private IReadOnlyList<RezeptUebersicht>? _rezepte;
+    private string _suche = string.Empty;
+    private ApiFehlerException? _fehler;
+    private int _anfrage;
+
+    protected override Task OnInitializedAsync() => SuchenAsync();
+
+    private async Task SuchenAsync()
+    {
+        // Beim Tippen überholen sich Anfragen: Nur die Antwort auf die letzte zählt.
+        var nummer = ++_anfrage;
+        try
+        {
+            var rezepte = await Api.AuflistenAsync(_suche);
+            if (nummer == _anfrage)
+            {
+                _rezepte = rezepte;
+                _fehler = null;
+            }
+        }
+        catch (ApiFehlerException fehler)
+        {
+            // Der Fehler einer schon überholten Anfrage zählt nicht mehr.
+            if (nummer == _anfrage)
+            {
+                _fehler = fehler;
+            }
+        }
+    }
+}

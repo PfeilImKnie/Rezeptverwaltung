@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#7a4b2a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <base href="/" />
+    <title>Rezepte</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="@Assets["icon.svg"]" />
+    <link rel="apple-touch-icon" href="@Assets["icon-192.png"]" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <ImportMap />
+    <HeadOutlet @rendermode="OhneVorabRendern" />
+</head>
+
+<body>
+    <div id="app-laden" class="laden">Rezepte werden geladen …</div>
+    <Routes @rendermode="OhneVorabRendern" />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>
+
+@code {
+    // Ohne Vorab-Rendern auf dem Server: Die Seiten laufen nur im Browser und holen ihre Daten über /api (BFF).
+    private static readonly IComponentRenderMode OhneVorabRendern = new InteractiveWebAssemblyRenderMode(prerender: false);
+}

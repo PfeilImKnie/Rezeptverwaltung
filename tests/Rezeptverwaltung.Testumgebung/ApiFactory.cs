@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Testcontainers.PostgreSql;
 
-namespace Rezeptverwaltung.Api.Tests;
+namespace Rezeptverwaltung.Testumgebung;
 
 /// <summary>
 /// Startet die komplette API im Speicher gegen eine echte PostgreSQL (eigener Container pro Testklasse) und einen

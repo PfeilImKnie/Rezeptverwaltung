@@ -23,6 +23,9 @@ internal sealed class EfRezeptRepository(RezepturDbContext datenbank) : IRezeptR
     public Task<Rezept?> LadenAsync(RezeptId id, CancellationToken cancellationToken) =>
         datenbank.Rezepte.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<Rezept>> AlleAsync(CancellationToken cancellationToken) =>
+        await datenbank.Rezepte.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public string StandVon(Rezept rezept) =>
         datenbank.Entry(rezept).Property<uint>(RezeptKonfiguration.Stand).CurrentValue.ToString(CultureInfo.InvariantCulture);
 

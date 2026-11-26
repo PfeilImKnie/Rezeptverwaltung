@@ -28,6 +28,7 @@ Der Ablauf ist im Skill `/pr-erstellen` festgelegt.
 - [ ] Rechenlogik (Skalierung, Mengen, Kosten …) ist zusätzlich **property-based** getestet.
 - [ ] Jeder Use Case hat Application-Tests (mit Fakes für Ports).
 - [ ] Jeder Endpoint hat API-Tests für Erfolg **und** jeden im Vertrag genannten Fehlerstatus.
+- [ ] Oberflächen-Änderungen haben Seitentests (bUnit); neue Kernabläufe einen Browsertest (Playwright) (ADR 0016).
 - [ ] Persistenz-Änderungen haben Integrationstests gegen echtes PostgreSQL 18 (Testcontainers); Modelländerungen haben eine Migration (ADR 0011).
 - [ ] **Mutation Score der Domain ≥ 80 %** (Stryker, bricht die CI darunter ab).
 - [ ] Alle Tests sind in der CI grün; kein Test wird übersprungen oder auskommentiert.
@@ -44,6 +45,7 @@ Der Ablauf ist im Skill `/pr-erstellen` festgelegt.
 ## 5. Sicherheit
 
 - [ ] Neue Endpoints verlangen Anmeldung, die Use Cases prüfen das Recht der Rolle, und Daten anderer Betriebe sind nicht erreichbar (404); mit Tests für Rollen und Betriebe (ADR 0015).
+- [ ] Die Weboberfläche bekommt nie einen Token in den Browser; neue Server-Endpunkte für den Browser stehen unter `/bff` (CSRF-Header) oder sind Seiten (ADR 0016).
 - [ ] Alle Eingaben werden begrenzt (Länge, Wertebereich, Genauigkeit), im Vertrag **und** im Domain-Modell.
 - [ ] Keine Secrets im Repository; Konfiguration über Umgebungsvariablen oder Secret Store.
 - [ ] Keine personenbezogenen Daten und keine Tokens in Logs.

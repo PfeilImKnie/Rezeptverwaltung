@@ -1,6 +1,6 @@
 # 0015 – Betriebe (Mandanten), Rollen und Anmeldung in der API
 
-- **Status:** Akzeptiert
+- **Status:** Akzeptiert; Aufnahme neuer Betriebe und Personen in [0017](0017-aufnahme-neuer-betriebe-und-personen.md)
 - **Datum:** 2026-11-23
 - **Betrifft:** alle Module, SharedKernel, API-Host, Persistenz, Tests, CI. Setzt [ADR 0004](0004-identity-provider-fuer-oauth2-und-alexa.md) auf API-Seite um.
 

@@ -5,6 +5,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Host\Rezeptverwaltung.Api\Rezeptverwaltung.Api.csproj" />
+    <!-- Alias, weil API und Weboberfläche beide eine Klasse „Program“ im globalen Namensraum haben. -->
+    <ProjectReference Include="..\..\src\Web\Rezeptverwaltung.Web\Rezeptverwaltung.Web.csproj" Aliases="WebHost" />
+    <ProjectReference Include="..\..\src\Web\Rezeptverwaltung.Web.Client\Rezeptverwaltung.Web.Client.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- CI-Regeln (ADR 0007, ADR 0010) werden gegen die echten Dateien geprüft. -->

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Kein Einfluss der Browsersprache auf Zahlen: Ein- und Ausgabe formatiert die App selbst (Zahlen.cs). -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>false</BlazorWebAssemblyLoadAllGlobalizationData>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rezeptverwaltung.Web.Tests" />
+  </ItemGroup>
+</Project>

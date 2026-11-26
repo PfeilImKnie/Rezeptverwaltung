@@ -1,7 +1,7 @@
 # Rezeptverwaltung
 
 Rezeptverwaltung für die Konditorei: Rezepte nach Gewicht, Grundrezepte als Bausteine, Skalierung,
-Allergene, Kalkulation. API-first, damit Tablet-App, Alexa-Skill und weitere Frontends dieselbe API nutzen.
+Allergene, Kalkulation. API-first, damit Weboberfläche (Tablet), Alexa-Skill und weitere Frontends dieselbe API nutzen.
 
 ## Stand
 
@@ -9,6 +9,8 @@ Modul **Rezeptur**:
 
 | Methode | Pfad | Zweck |
 |---|---|---|
+| `GET` | `/api/v1/rezepte[?suche=…]` | Rezepte des eigenen Betriebs, alphabetisch; Suche ohne Rücksicht auf Groß-/Kleinschreibung und Akzente |
+| `GET` | `/api/v1/rezepte/berechtigungen` | Was die angemeldete Person darf (lesen, bearbeiten, freigeben) |
 | `POST` | `/api/v1/rezepte` | Rezept mit Zutaten (in Gramm) anlegen |
 | `GET` | `/api/v1/rezepte/{id}` | Rezept abrufen |
 | `GET` | `/api/v1/rezepte/{id}/skaliert?zielgewichtGramm=…[&fassung=n]` | Alle Mengen auf ein Zielgewicht umrechnen |
@@ -28,6 +30,11 @@ entstehen als Entwurf und gelten erst nach der Freigabe (ADR 0013). Änderungen 
 Daten liegen in **PostgreSQL** (ADR 0008, 0011). Jede Anfrage braucht einen **Token**; jedes Rezept gehört einem
 **Betrieb**, und Rechte richten sich nach der **Rolle** (Mitarbeiter/in, Konditor/in, Inhaber/in, ADR 0015).
 Bis zum Hosting (ADR 0005) ist die API noch nicht öffentlich erreichbar.
+
+**Weboberfläche** (ADR 0016): Blazor Web App für das Tablet in der Backstube. Sie kann alles, was die API kann:
+Rezepte suchen, anlegen, umrechnen (Gewicht, Ring, Blech), Entwürfe bearbeiten, freigeben und verwerfen, Fassungen
+ansehen. Was die Rolle nicht darf, ist ausgeblendet. Der Login läuft über den Server (BFF), im Browser liegt nie ein
+Token. Neue Betriebe legt der Betreiber an, Personen lädt die Inhaberin bzw. der Inhaber ein (ADR 0017, Umsetzung folgt).
 
 ## Voraussetzungen
 
@@ -49,12 +56,17 @@ Mit Docker ist nichts weiter einzurichten.
 ```bash
 dotnet build Rezeptverwaltung.slnx
 dotnet test --solution Rezeptverwaltung.slnx                 # startet PostgreSQL-Container selbst
-dotnet run --project src/Host/Rezeptverwaltung.AppHost       # Aspire: PostgreSQL + API + Dashboard
+dotnet run --project src/Host/Rezeptverwaltung.AppHost       # Aspire: PostgreSQL + Login + API + Weboberfläche
 ```
 
 Der AppHost startet PostgreSQL 18 im Container mit dem Volume `rezeptverwaltung-postgres-daten` (Daten bleiben
-erhalten), einen **Test-Login** auf `http://localhost:18080` und die API auf `http://localhost:5080`. Die API migriert
-die Datenbank beim Start.
+erhalten), einen **Test-Login** auf `http://localhost:18080`, die API auf `http://localhost:5080` und die
+**Weboberfläche auf `http://localhost:5090`**. Die API migriert die Datenbank beim Start.
+
+In der Weboberfläche wählt der Test-Login statt eines Passworts eine Person im Betrieb `entwicklung`: Inhaber/in,
+Konditor/in oder Mitarbeiter/in. Die Browsertests laden beim ersten Lauf Chromium für Playwright herunter
+(`~/.cache/ms-playwright`). Fehlen Systembibliotheken, einmalig
+`pwsh tests/Rezeptverwaltung.Web.Tests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium` ausführen.
 
 Token für den Betrieb `entwicklung` holen (Rolle: `inhaber`, `konditor` oder `mitarbeiter`):
 
@@ -88,6 +100,7 @@ curl -s -X POST localhost:5080/api/v1/rezepte -H "Authorization: Bearer $TOKEN" 
 | Prüfung | Werkzeug | Wo |
 |---|---|---|
 | Domain-, Use-Case- und API-Tests | xUnit v3, Shouldly, CsCheck | lokal + CI |
+| Weboberfläche: Seiten, Login über den Server (BFF), Kernabläufe im Browser | bUnit, WebApplicationFactory, Playwright (Chromium) | lokal + CI |
 | Persistenz gegen echtes PostgreSQL 18 | Testcontainers | lokal + CI |
 | Architekturregeln | ArchUnitNET | lokal + CI |
 | API-Vertrag | Contract-Test + Schemathesis | lokal / CI |

@@ -1,0 +1,45 @@
+@* Zutatenzeilen bearbeiten: Reihenfolge zählt (ADR 0011), Mengen in Gramm auf 0,01 g. *@
+<fieldset class="zutaten-editor">
+    <legend>Zutaten</legend>
+    <ol>
+        @for (var i = 0; i < Zeilen.Count; i++)
+        {
+            var index = i;
+            var zeile = Zeilen[index];
+            <li @key="zeile">
+                <input class="bezeichnung" aria-label="@($"Zutat {index + 1}")" placeholder="Zutat" @bind="zeile.Bezeichnung" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" />
+                <span class="gramm"><input inputmode="decimal" aria-label="@($"Menge {index + 1} in Gramm")" placeholder="0" @bind="zeile.Gramm" @bind:event="oninput" @bind:after="Geaendert.InvokeAsync" /> g</span>
+                <span class="zeilen-knoepfe">
+                    <button type="button" class="klein" title="Nach oben" aria-label="@($"Zeile {index + 1} nach oben")" disabled="@(index == 0)" @onclick="() => Verschieben(index, -1)">↑</button>
+                    <button type="button" class="klein" title="Nach unten" aria-label="@($"Zeile {index + 1} nach unten")" disabled="@(index == Zeilen.Count - 1)" @onclick="() => Verschieben(index, 1)">↓</button>
+                    <button type="button" class="klein entfernen" title="Entfernen" aria-label="@($"Zeile {index + 1} entfernen")" @onclick="() => Entfernen(index)">✕</button>
+                </span>
+            </li>
+        }
+    </ol>
+    <button type="button" class="knopf zweitrangig" disabled="@(Zeilen.Count >= Inhaltseingabe.MaximaleZeilen)" @onclick="Hinzufuegen">+ Zutat</button>
+</fieldset>
+
+@code {
+    [Parameter, EditorRequired] public List<ZeileEingabe> Zeilen { get; set; } = [];
+
+    [Parameter] public EventCallback Geaendert { get; set; }
+
+    private async Task Hinzufuegen()
+    {
+        Zeilen.Add(new ZeileEingabe());
+        await Geaendert.InvokeAsync();
+    }
+
+    private async Task Entfernen(int index)
+    {
+        Zeilen.RemoveAt(index);
+        await Geaendert.InvokeAsync();
+    }
+
+    private async Task Verschieben(int index, int richtung)
+    {
+        (Zeilen[index], Zeilen[index + richtung]) = (Zeilen[index + richtung], Zeilen[index]);
+        await Geaendert.InvokeAsync();
+    }
+}

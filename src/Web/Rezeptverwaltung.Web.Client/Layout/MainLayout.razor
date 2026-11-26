@@ -1,0 +1,55 @@
+@inherits LayoutComponentBase
+@inject Sitzung Sitzung
+
+<div class="app-bereit">
+    <header class="kopf">
+        <a class="marke" href="">Rezepte</a>
+        @if (_sitzung is not null)
+        {
+            <span class="person">@_sitzung.Name</span>
+            <form method="post" action="abmelden" class="abmelden">
+                <input type="hidden" name="__RequestVerificationToken" value="@_sitzung.AbmeldeToken" />
+                <button type="submit" class="knopf zweitrangig">Abmelden</button>
+            </form>
+        }
+    </header>
+    <main>
+        @if (_fehler is not null)
+        {
+            <Meldung Fehler="_fehler" />
+        }
+        else if (_sitzung is null)
+        {
+            <p class="laden">Anmeldung wird geprüft …</p>
+        }
+        else if (_sitzung.Hinweis is not null || !_sitzung.Rechte.Lesen)
+        {
+            <div class="meldung fehler" role="alert">
+                <p>@(_sitzung.Hinweis ?? "Deine Anmeldung hat noch keine Rolle in einem Betrieb. Bitte die Inhaberin oder den Inhaber, dich einzuladen.")</p>
+            </div>
+        }
+        else
+        {
+            <CascadingValue Value="_sitzung" IsFixed="true">
+                @Body
+            </CascadingValue>
+        }
+    </main>
+</div>
+
+@code {
+    private SitzungsInfo? _sitzung;
+    private ApiFehlerException? _fehler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _sitzung = await Sitzung.LadenAsync();
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+    }
+}
