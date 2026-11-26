@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!-- Test-Login für die lokale Entwicklung (ADR 0016): Personenauswahl statt Passwort. Nie im Betrieb verwenden. -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test-Login</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #faf6f1; color: #2b211a; max-width: 30rem; margin: 3rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; }
+    p { color: #6f6158; }
+    form { margin: 0.8rem 0; }
+    button { font: inherit; width: 100%; min-height: 56px; padding: 0.7rem 1rem; border-radius: 10px; border: 1px solid #7a4b2a;
+             background: #fff; color: #7a4b2a; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
+    small { color: #6f6158; }
+  </style>
+</head>
+<body>
+  <h1>Test-Login (nur Entwicklung)</h1>
+  <p>Im Betrieb meldet man sich bei Zitadel an. Hier wird nur eine Testperson gewählt.</p>
+    <form method="post">
+      <input type="hidden" name="username" value="entwicklung-inhaber">
+      <input type="hidden" name="claims" value="{&quot;aud&quot;: [&quot;rezeptverwaltung-web&quot;, &quot;rezeptverwaltung-api&quot;], &quot;name&quot;: &quot;Ina Inhaberin&quot;, &quot;urn:zitadel:iam:org:project:roles&quot;: {&quot;inhaber&quot;: {&quot;entwicklung&quot;: &quot;entwicklung.local&quot;}}}">
+      <button type="submit">Als Inhaber/in anmelden<small>Ina Inhaberin, Betrieb „entwicklung“</small></button>
+    </form>
+    <form method="post">
+      <input type="hidden" name="username" value="entwicklung-konditor">
+      <input type="hidden" name="claims" value="{&quot;aud&quot;: [&quot;rezeptverwaltung-web&quot;, &quot;rezeptverwaltung-api&quot;], &quot;name&quot;: &quot;Konrad Konditor&quot;, &quot;urn:zitadel:iam:org:project:roles&quot;: {&quot;konditor&quot;: {&quot;entwicklung&quot;: &quot;entwicklung.local&quot;}}}">
+      <button type="submit">Als Konditor/in anmelden<small>Konrad Konditor, Betrieb „entwicklung“</small></button>
+    </form>
+    <form method="post">
+      <input type="hidden" name="username" value="entwicklung-mitarbeiter">
+      <input type="hidden" name="claims" value="{&quot;aud&quot;: [&quot;rezeptverwaltung-web&quot;, &quot;rezeptverwaltung-api&quot;], &quot;name&quot;: &quot;Mia Mitarbeiterin&quot;, &quot;urn:zitadel:iam:org:project:roles&quot;: {&quot;mitarbeiter&quot;: {&quot;entwicklung&quot;: &quot;entwicklung.local&quot;}}}">
+      <button type="submit">Als Mitarbeiter/in anmelden<small>Mia Mitarbeiterin, Betrieb „entwicklung“</small></button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,31 @@
+@* Hinweis- oder Fehlerkasten. Bei veraltetem Stand mit „Neu laden“. *@
+@if (Fehler is not null || Texte.Count > 0)
+{
+    <div class="meldung fehler" role="alert">
+        @if (Fehler is not null)
+        {
+            <p>@Fehler.Message</p>
+            @if (Fehler.IstVeraltet && NeuLaden.HasDelegate)
+            {
+                <button type="button" class="knopf" @onclick="NeuLaden">Neu laden</button>
+            }
+        }
+        @if (Texte.Count > 0)
+        {
+            <ul>
+                @foreach (var text in Texte)
+                {
+                    <li>@text</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ApiFehlerException? Fehler { get; set; }
+
+    [Parameter] public IReadOnlyCollection<string> Texte { get; set; } = [];
+
+    [Parameter] public EventCallback NeuLaden { get; set; }
+}

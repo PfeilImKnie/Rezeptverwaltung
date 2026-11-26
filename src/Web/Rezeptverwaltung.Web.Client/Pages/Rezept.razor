@@ -1,0 +1,126 @@
+@page "/rezepte/{Id:guid}"
+@inject IRezeptApi Api
+@inject NavigationManager Navigation
+
+<PageTitle>@(_rezept?.Wert.Name ?? "Rezept")</PageTitle>
+
+<p class="zurueck"><a href="">← Rezepte</a></p>
+<Meldung Fehler="_fehler" NeuLaden="LadenAsync" />
+
+@if (_rezept is { Wert: var rezept })
+{
+    <h1>@rezept.Name</h1>
+    <p class="fassung-info">
+        @if (rezept.AktuelleFassung is { } aktuell)
+        {
+            <span>Fassung @aktuell, freigegeben</span>
+        }
+        else
+        {
+            <span class="marke-entwurf">Entwurf (Fassung @rezept.MassgeblicheFassung), noch nicht freigegeben</span>
+        }
+        @if (rezept.Bezugsform is { } form)
+        {
+            <span> · @form.Beschreibung</span>
+        }
+    </p>
+
+    <div class="aktionen">
+        @if (rezept.Entwurf is { } entwurf && Sitzung.Rechte.Bearbeiten)
+        {
+            <a class="knopf" href="@($"rezepte/{Id}/entwurf")">Entwurf (Fassung @entwurf) bearbeiten</a>
+        }
+        else if (rezept.Entwurf is { } offen)
+        {
+            <a class="knopf zweitrangig" href="@($"rezepte/{Id}/fassungen/{offen}")">Entwurf ansehen</a>
+        }
+        else if (Sitzung.Rechte.Bearbeiten)
+        {
+            <button type="button" class="knopf" disabled="@_arbeitet" @onclick="EntwurfAnlegenAsync">Neuen Entwurf anlegen</button>
+        }
+    </div>
+
+    <ZutatenTabelle Zutaten="rezept.Zutaten" GesamtGramm="rezept.GesamtgewichtGramm" />
+
+    @if (rezept.Zutaten.Count > 0)
+    {
+        <Umrechnen RezeptId="Id" Bezugsform="rezept.Bezugsform" GesamtGramm="rezept.GesamtgewichtGramm" />
+    }
+
+    <section class="fassungen" aria-labelledby="fassungen-titel">
+        <h2 id="fassungen-titel">Fassungen</h2>
+        <ul>
+            @foreach (var fassung in rezept.Fassungen.OrderByDescending(f => f.Nummer))
+            {
+                <li>
+                    <a href="@($"rezepte/{Id}/fassungen/{fassung.Nummer}")">Fassung @fassung.Nummer</a>
+                    @if (fassung.IstEntwurf)
+                    {
+                        <span class="marke-entwurf">Entwurf vom @Datum(fassung.ErstelltAm)</span>
+                    }
+                    else
+                    {
+                        <span>freigegeben am @Datum(fassung.FreigegebenAm!.Value)</span>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
+}
+else if (_nichtGefunden)
+{
+    <h1>Rezept nicht gefunden</h1>
+}
+else if (_fehler is null)
+{
+    <p class="laden">Rezept wird geladen …</p>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [CascadingParameter] public SitzungsInfo Sitzung { get; set; } = default!;
+
+    private MitStand<RezeptDetails>? _rezept;
+    private ApiFehlerException? _fehler;
+    private bool _nichtGefunden;
+    private bool _arbeitet;
+
+    protected override Task OnParametersSetAsync() => LadenAsync();
+
+    private async Task LadenAsync()
+    {
+        _fehler = null;
+        try
+        {
+            _rezept = await Api.RezeptAsync(Id);
+            _nichtGefunden = _rezept is null;
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+    }
+
+    private async Task EntwurfAnlegenAsync()
+    {
+        _arbeitet = true;
+        _fehler = null;
+        try
+        {
+            await Api.EntwurfAnlegenAsync(Id, _rezept!.Stand);
+            Navigation.NavigateTo($"rezepte/{Id}/entwurf");
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+        finally
+        {
+            _arbeitet = false;
+        }
+    }
+
+    internal static string Datum(DateTimeOffset zeitpunkt) =>
+        zeitpunkt.ToLocalTime().ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture);
+}

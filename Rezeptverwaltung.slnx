@@ -13,11 +13,17 @@
   <Folder Name="/src/SharedKernel/">
     <Project Path="src/SharedKernel/Rezeptverwaltung.SharedKernel/Rezeptverwaltung.SharedKernel.csproj" />
   </Folder>
+  <Folder Name="/src/Web/">
+    <Project Path="src/Web/Rezeptverwaltung.Web.Client/Rezeptverwaltung.Web.Client.csproj" />
+    <Project Path="src/Web/Rezeptverwaltung.Web/Rezeptverwaltung.Web.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Rezeptverwaltung.Api.Tests/Rezeptverwaltung.Api.Tests.csproj" />
     <Project Path="tests/Rezeptverwaltung.ArchitectureTests/Rezeptverwaltung.ArchitectureTests.csproj" />
     <Project Path="tests/Rezeptverwaltung.Rezeptur.Application.Tests/Rezeptverwaltung.Rezeptur.Application.Tests.csproj" />
     <Project Path="tests/Rezeptverwaltung.Rezeptur.Domain.Tests/Rezeptverwaltung.Rezeptur.Domain.Tests.csproj" />
     <Project Path="tests/Rezeptverwaltung.Rezeptur.Infrastructure.Tests/Rezeptverwaltung.Rezeptur.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Rezeptverwaltung.Testumgebung/Rezeptverwaltung.Testumgebung.csproj" />
+    <Project Path="tests/Rezeptverwaltung.Web.Tests/Rezeptverwaltung.Web.Tests.csproj" />
   </Folder>
 </Solution>

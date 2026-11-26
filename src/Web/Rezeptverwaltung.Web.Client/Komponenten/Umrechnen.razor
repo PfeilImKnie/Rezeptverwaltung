@@ -1,0 +1,143 @@
+@* Umrechnen nach Gewicht oder auf einen anderen Ring bzw. ein anderes Blech (über das Volumen, ADR 0014). *@
+@inject IRezeptApi Api
+
+<section class="umrechnen" aria-labelledby="umrechnen-titel">
+    <h2 id="umrechnen-titel">Umrechnen</h2>
+    <div class="auswahl" role="radiogroup" aria-label="Umrechnen auf">
+        <button type="button" role="radio" aria-checked="@(_art == Gewicht)" class="@Aktiv(Gewicht)" @onclick="() => ArtSetzen(Gewicht)">Gewicht</button>
+        @if (Bezugsform is not null)
+        {
+            <button type="button" role="radio" aria-checked="@(_art == Form.Ring)" class="@Aktiv(Form.Ring)" @onclick="() => ArtSetzen(Form.Ring)">Ring</button>
+            <button type="button" role="radio" aria-checked="@(_art == Form.Blech)" class="@Aktiv(Form.Blech)" @onclick="() => ArtSetzen(Form.Blech)">Blech</button>
+        }
+    </div>
+    @if (Bezugsform is null)
+    {
+        <p class="hinweis">Dieses Rezept hat keine Bezugsform, daher nur nach Gewicht.</p>
+    }
+
+    <form class="masse" @onsubmit="UmrechnenAsync">
+        @if (_art == Gewicht)
+        {
+            <label>Gesamtgewicht (g)<input inputmode="decimal" @bind="_gewicht" placeholder="@Zahlen.Eingabe(GesamtGramm)" /></label>
+        }
+        else if (_art == Form.Ring)
+        {
+            <label>Durchmesser (cm)<input inputmode="decimal" @bind="_ziel.Durchmesser" /></label>
+            <label>Höhe (cm)<input inputmode="decimal" @bind="_ziel.Hoehe" /></label>
+        }
+        else
+        {
+            <label>Länge (cm)<input inputmode="decimal" @bind="_ziel.Laenge" /></label>
+            <label>Breite (cm)<input inputmode="decimal" @bind="_ziel.Breite" /></label>
+            <label>Höhe (cm)<input inputmode="decimal" @bind="_ziel.Hoehe" /></label>
+        }
+        <button type="submit" class="knopf" disabled="@_rechnet">Umrechnen</button>
+    </form>
+
+    <Meldung Fehler="_fehler" Texte="_eingabefehler" />
+
+    @if (_ergebnis is not null)
+    {
+        <div class="ergebnis" aria-live="polite">
+            <p>
+                @if (_ergebnis.Zielform is { } zielform)
+                {
+                    <text>Für <strong>@zielform.Beschreibung</strong>: </text>
+                }
+                Faktor <strong>@Zahlen.Faktor(_ergebnis.Faktor)</strong>
+            </p>
+            <ZutatenTabelle Zutaten="_ergebnis.Zutaten" GesamtGramm="_ergebnis.Zutaten.Sum(z => z.Gramm)" />
+        </div>
+    }
+</section>
+
+@code {
+    private const string Gewicht = "gewicht";
+
+    [Parameter, EditorRequired] public Guid RezeptId { get; set; }
+
+    /// <summary>Fassung, die umgerechnet wird; <c>null</c> = maßgebliche Fassung.</summary>
+    [Parameter] public int? Fassung { get; set; }
+
+    [Parameter] public Form? Bezugsform { get; set; }
+
+    [Parameter] public decimal GesamtGramm { get; set; }
+
+    private string _art = Gewicht;
+    private string _gewicht = string.Empty;
+    private FormEingabe _ziel = new();
+    private SkaliertesRezept? _ergebnis;
+    private ApiFehlerException? _fehler;
+    private List<string> _eingabefehler = [];
+    private bool _rechnet;
+
+    protected override void OnParametersSet()
+    {
+        // Vorbelegung mit der eigenen Form: Meist ändert sich nur ein Maß (z. B. Ø 26 → Ø 18).
+        if (_ziel.Art == string.Empty && Bezugsform is not null)
+        {
+            _ziel = FormEingabe.Aus(Bezugsform);
+            if (Bezugsform.Art == Form.Ring)
+            {
+                _ziel.Laenge = _ziel.Breite = string.Empty;
+            }
+        }
+    }
+
+    private string Aktiv(string art) => _art == art ? "aktiv" : string.Empty;
+
+    private void ArtSetzen(string art)
+    {
+        _art = art;
+        _ergebnis = null;
+        _fehler = null;
+        _eingabefehler = [];
+    }
+
+    private async Task UmrechnenAsync()
+    {
+        _fehler = null;
+        _eingabefehler = [];
+        var ziel = Ziel(_eingabefehler);
+        if (ziel is null)
+        {
+            _ergebnis = null;
+            return;
+        }
+
+        _rechnet = true;
+        try
+        {
+            _ergebnis = await Api.UmrechnenAsync(RezeptId, ziel, Fassung);
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+            _ergebnis = null;
+        }
+        finally
+        {
+            _rechnet = false;
+        }
+    }
+
+    private Umrechnung? Ziel(List<string> fehler)
+    {
+        if (_art == Gewicht)
+        {
+            var gramm = Zahlen.Lesen(_gewicht, Inhaltseingabe.GrammNachkommastellen, out var meldung);
+            if (gramm is null)
+            {
+                fehler.Add($"Gesamtgewicht: {meldung}");
+                return null;
+            }
+
+            return new Umrechnung.AufGewicht(gramm.Value);
+        }
+
+        _ziel.Art = _art;
+        var form = _ziel.Lesen(fehler);
+        return form is null ? null : new Umrechnung.AufForm(form);
+    }
+}

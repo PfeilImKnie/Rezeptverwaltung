@@ -30,6 +30,12 @@ jobs:
       # NuGet-Audit: bekannte Schwachstellen brechen bereits das Restore/Build (Directory.Build.props).
       - run: dotnet format Rezeptverwaltung.slnx --verify-no-changes --no-restore
       - run: dotnet build Rezeptverwaltung.slnx -c Release --no-restore
+      # Browsertests der Weboberfläche (ADR 0016): Chromium für Playwright samt Systembibliotheken.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('Directory.Packages.props') }}
+      - run: pwsh tests/Rezeptverwaltung.Web.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
       # Integrationstests starten PostgreSQL per Testcontainers (Docker ist auf dem Runner vorhanden).
       - run: >
           dotnet test --solution Rezeptverwaltung.slnx -c Release --no-build

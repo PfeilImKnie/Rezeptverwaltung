@@ -1,0 +1,170 @@
+@page "/rezepte/{Id:guid}/entwurf"
+@inject IRezeptApi Api
+@inject NavigationManager Navigation
+
+<PageTitle>Entwurf bearbeiten</PageTitle>
+
+<p class="zurueck"><a href="@($"rezepte/{Id}")">← Zum Rezept</a></p>
+<Meldung Fehler="_fehler" Texte="_eingabefehler" NeuLaden="LadenAsync" />
+
+@if (_name is not null && _entwurf is not null)
+{
+    <h1>@_name – Entwurf (Fassung @_entwurf.Nummer)</h1>
+    @if (!Sitzung.Rechte.Bearbeiten)
+    {
+        <p class="hinweis">Zum Bearbeiten fehlt dir das Recht.</p>
+    }
+    else
+    {
+        <form class="rezept-formular" @onsubmit="SpeichernAsync">
+            <FormEditor Eingabe="_form" Geaendert="Geaendert" />
+            <ZutatenEditor Zeilen="_zeilen" Geaendert="Geaendert" />
+            <div class="aktionen">
+                <button type="submit" class="knopf" disabled="@(_arbeitet || !_geaendert)">Speichern</button>
+                @if (Sitzung.Rechte.Freigeben)
+                {
+                    <button type="button" class="knopf freigeben" disabled="@(_arbeitet || _geaendert)" title="@(_geaendert ? "Erst speichern" : null)" @onclick="FreigebenAsync">Freigeben</button>
+                }
+                @if (_verwerfenFragen)
+                {
+                    <span class="rueckfrage">
+                        Entwurf wirklich verwerfen?
+                        <button type="button" class="knopf gefahr" disabled="@_arbeitet" @onclick="VerwerfenAsync">Ja, verwerfen</button>
+                        <button type="button" class="knopf zweitrangig" @onclick="() => _verwerfenFragen = false">Nein</button>
+                    </span>
+                }
+                else
+                {
+                    <button type="button" class="knopf zweitrangig gefahr" disabled="@_arbeitet" @onclick="() => _verwerfenFragen = true">Verwerfen</button>
+                }
+            </div>
+            @if (_geaendert)
+            {
+                <p class="hinweis">Ungespeicherte Änderungen.</p>
+            }
+            else if (!Sitzung.Rechte.Freigeben)
+            {
+                <p class="hinweis">Freigeben kann die Inhaberin oder der Inhaber.</p>
+            }
+        </form>
+    }
+}
+else if (_keinEntwurf)
+{
+    <h1>Kein Entwurf</h1>
+    <p class="hinweis">Zu diesem Rezept gibt es gerade keinen Entwurf. Vielleicht wurde er inzwischen freigegeben oder verworfen.</p>
+    <p><a class="knopf zweitrangig" href="@($"rezepte/{Id}")">Zum Rezept</a></p>
+}
+else if (_fehler is null)
+{
+    <p class="laden">Entwurf wird geladen …</p>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [CascadingParameter] public SitzungsInfo Sitzung { get; set; } = default!;
+
+    private string? _name;
+    private string _stand = string.Empty;
+    private FassungDetails? _entwurf;
+    private FormEingabe _form = new();
+    private List<ZeileEingabe> _zeilen = [];
+    private List<string> _eingabefehler = [];
+    private ApiFehlerException? _fehler;
+    private bool _keinEntwurf;
+    private bool _geaendert;
+    private bool _arbeitet;
+    private bool _verwerfenFragen;
+
+    protected override Task OnParametersSetAsync() => LadenAsync();
+
+    private async Task LadenAsync()
+    {
+        _fehler = null;
+        _eingabefehler = [];
+        _keinEntwurf = false;
+        try
+        {
+            var rezept = await Api.RezeptAsync(Id);
+            var entwurf = rezept?.Wert.Entwurf is { } nummer ? await Api.FassungAsync(Id, nummer) : null;
+            if (rezept is null || entwurf is null)
+            {
+                // Z. B. inzwischen an einem anderen Gerät freigegeben oder verworfen: alten Editor nicht stehen lassen.
+                _keinEntwurf = true;
+                _name = null;
+                _entwurf = null;
+                _stand = string.Empty;
+                _geaendert = false;
+                return;
+            }
+
+            _name = rezept.Wert.Name;
+            Uebernehmen(entwurf);
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+    }
+
+    private void Uebernehmen(MitStand<FassungDetails> entwurf)
+    {
+        _entwurf = entwurf.Wert;
+        _stand = entwurf.Stand;
+        _form = FormEingabe.Aus(entwurf.Wert.Bezugsform);
+        _zeilen = entwurf.Wert.Zutaten.Select(ZeileEingabe.Aus).ToList();
+        if (_zeilen.Count == 0)
+        {
+            _zeilen.Add(new ZeileEingabe());
+        }
+
+        _geaendert = false;
+    }
+
+    private void Geaendert() => _geaendert = true;
+
+    private async Task SpeichernAsync()
+    {
+        _fehler = null;
+        _eingabefehler = [];
+        var inhalt = Inhaltseingabe.Lesen(_form, _zeilen, _eingabefehler);
+        if (_eingabefehler.Count > 0)
+        {
+            return;
+        }
+
+        await AusfuehrenAsync(async () => Uebernehmen(await Api.EntwurfSpeichernAsync(Id, _stand, inhalt)));
+    }
+
+    private Task FreigebenAsync() => AusfuehrenAsync(async () =>
+    {
+        await Api.FreigebenAsync(Id, _stand);
+        Navigation.NavigateTo($"rezepte/{Id}");
+    });
+
+    private Task VerwerfenAsync() => AusfuehrenAsync(async () =>
+    {
+        await Api.EntwurfVerwerfenAsync(Id, _stand);
+        Navigation.NavigateTo($"rezepte/{Id}");
+    });
+
+    private async Task AusfuehrenAsync(Func<Task> aktion)
+    {
+        _arbeitet = true;
+        _fehler = null;
+        try
+        {
+            await aktion();
+        }
+        catch (ApiFehlerException fehler)
+        {
+            _fehler = fehler;
+        }
+        finally
+        {
+            _arbeitet = false;
+            _verwerfenFragen = false;
+        }
+    }
+}

@@ -1,3 +1,5 @@
+extern alias WebHost;
+
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnitV3;
 using Rezeptverwaltung.Rezeptur.Application.Ports;
@@ -23,8 +25,12 @@ public sealed class ArchitekturTests
         ("Rezeptur", typeof(Rezept).Assembly, typeof(IRezeptRepository).Assembly, typeof(RezepturModule).Assembly),
     ];
 
+    private static readonly Assembly WebServer = typeof(WebHost::Program).Assembly;
+
+    private static readonly Assembly WebClient = typeof(Rezeptverwaltung.Web.Client.Routes).Assembly;
+
     private static readonly Architecture Architektur = new ArchLoader()
-        .LoadAssemblies([SharedKernel, typeof(Program).Assembly, .. Module.SelectMany(m => new[] { m.Domain, m.Application, m.Infrastructure })])
+        .LoadAssemblies([SharedKernel, typeof(Program).Assembly, WebServer, WebClient, .. Module.SelectMany(m => new[] { m.Domain, m.Application, m.Infrastructure })])
         .Build();
 
     private const string Frameworks = @"^(Microsoft\.AspNetCore|Microsoft\.EntityFrameworkCore|Microsoft\.Extensions|Npgsql|System\.Net\.Http)(\..*)?$";
@@ -55,6 +61,25 @@ public sealed class ArchitekturTests
             .AndShould().NotDependOnAny(Types().That().ResideInAssembly(m.Infrastructure))
             .Check(Architektur);
     }
+
+    /// <summary>
+    /// Die Weboberfläche (ADR 0016) ist ein eigener Client der API wie später Alexa: Sie kennt weder Module noch
+    /// SharedKernel noch den API-Host, sondern nur den HTTP-Vertrag.
+    /// </summary>
+    [Fact]
+    public void Weboberflaeche_spricht_nur_ueber_HTTP_mit_der_API() =>
+        // Nur über Namensräume: Die Coverage-Instrumentierung (CI) fügt in jede Assembly gleichnamige Hilfstypen ein.
+        Types().That().ResideInNamespaceMatching(@"^Rezeptverwaltung\.Web(\..*)?$").Should()
+            .NotDependOnAny(Types().That().ResideInNamespaceMatching(@"^Rezeptverwaltung\.(Rezeptur|SharedKernel|Api)(\..*)?$"))
+            .Check(Architektur);
+
+    /// <summary>Der Browser-Teil darf den Server-Teil nicht kennen (er läuft im Browser, nicht auf dem Server).</summary>
+    [Fact]
+    public void Browser_Teil_kennt_den_Server_Teil_nicht() =>
+        Types().That().ResideInNamespaceMatching(@"^Rezeptverwaltung\.Web\.Client(\..*)?$").Should()
+            .NotDependOnAny(Types().That().ResideInAssembly(WebServer).And().ResideInNamespaceMatching(@"^Rezeptverwaltung\.Web(\..*)?$")
+                .And().DoNotResideInNamespaceMatching(@"^Rezeptverwaltung\.Web\.Client(\..*)?$"))
+            .Check(Architektur);
 
     [Fact]
     public void SharedKernel_kennt_keine_Module() =>
