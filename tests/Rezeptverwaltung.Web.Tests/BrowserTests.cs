@@ -60,6 +60,18 @@ public sealed class BrowserTests(BrowserFactory web) : IClassFixture<BrowserFact
         });
         var seite = await kontext.NewPageAsync();
         seite.SetDefaultTimeout(30_000);
+        // Diagnose für die CI: was der Browser meldet, wenn die App nicht startet.
+        var protokoll = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        seite.Console += (_, meldung) => protokoll.Enqueue($"console.{meldung.Type}: {meldung.Text}");
+        seite.PageError += (_, fehler) => protokoll.Enqueue($"pageerror: {fehler}");
+        seite.RequestFailed += (_, anfrage) => protokoll.Enqueue($"requestfailed: {anfrage.Url} {anfrage.Failure}");
+        seite.Response += (_, antwort) =>
+        {
+            if (antwort.Status >= 400)
+            {
+                protokoll.Enqueue($"http {antwort.Status}: {antwort.Url}");
+            }
+        };
 
         await seite.GotoAsync(web.Adresse);
         // Login-Seite des Test-Login-Servers (statt Zitadel).
@@ -67,7 +79,16 @@ public sealed class BrowserTests(BrowserFactory web) : IClassFixture<BrowserFact
         await seite.FillAsync("textarea[name=claims]", TestLogin.LoginClaims(persona, anzeigename));
         await seite.ClickAsync("input[type=submit]");
 
-        await Assertions.Expect(seite.Locator(".kopf .person")).ToHaveTextAsync(anzeigename);
+        try
+        {
+            await Assertions.Expect(seite.Locator(".kopf .person")).ToHaveTextAsync(anzeigename);
+        }
+        catch (PlaywrightException ausnahme)
+        {
+            throw new InvalidOperationException(
+                $"App nach dem Login nicht bereit. Browser meldete:{Environment.NewLine}{string.Join(Environment.NewLine, protokoll)}", ausnahme);
+        }
+
         return seite;
     }
 
