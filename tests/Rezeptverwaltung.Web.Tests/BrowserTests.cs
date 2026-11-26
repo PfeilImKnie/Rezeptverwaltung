@@ -79,17 +79,28 @@ public sealed class BrowserTests(BrowserFactory web) : IClassFixture<BrowserFact
         await seite.FillAsync("textarea[name=claims]", TestLogin.LoginClaims(persona, anzeigename));
         await seite.ClickAsync("input[type=submit]");
 
-        try
+        for (var versuch = 1; ; versuch++)
         {
-            await Assertions.Expect(seite.Locator(".kopf .person")).ToHaveTextAsync(anzeigename);
-        }
-        catch (PlaywrightException ausnahme)
-        {
-            throw new InvalidOperationException(
-                $"App nach dem Login nicht bereit. Browser meldete:{Environment.NewLine}{string.Join(Environment.NewLine, protokoll)}", ausnahme);
-        }
+            try
+            {
+                await Assertions.Expect(seite.Locator(".kopf .person")).ToHaveTextAsync(anzeigename);
+                return seite;
+            }
+            catch (PlaywrightException ausnahme)
+            {
+                // Auf CI-Runnern starten parallel laufende Testprojekte Docker-Container. Die neuen Netzwerkschnittstellen
+                // lassen Chromium laufende Downloads abbrechen (ERR_NETWORK_CHANGED). Nur dann neu laden; die Sitzung bleibt.
+                if (versuch < 3 && protokoll.Any(m => m.Contains("ERR_NETWORK_CHANGED", StringComparison.Ordinal)))
+                {
+                    protokoll.Clear();
+                    await seite.ReloadAsync();
+                    continue;
+                }
 
-        return seite;
+                throw new InvalidOperationException(
+                    $"App nach dem Login nicht bereit. Browser meldete:{Environment.NewLine}{string.Join(Environment.NewLine, protokoll)}", ausnahme);
+            }
+        }
     }
 
     private static async Task FotoAsync(IPage seite, string name)
